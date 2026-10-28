@@ -1,0 +1,96 @@
+{
+  "name": "claude-companion",
+  "productName": "Claude Companion",
+  "version": "0.1.0",
+  "description": "An unofficial desktop buddy for Claude Code: live progress, tokens, plan usage, and buttons for the decisions waiting on you.",
+  "main": "src/main/main.js",
+  "author": "Skyward",
+  "license": "MIT",
+  "private": true,
+  "keywords": [
+    "claude",
+    "claude-code",
+    "electron",
+    "desktop-widget",
+    "tray",
+    "ai-agent",
+    "companion"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --verbose",
+    "demo": "electron . --demo",
+    "test": "node --test test/*.test.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --publish never",
+    "icon": "electron scripts/render-assets.js icon"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "dev.claude-companion",
+    "productName": "Claude Companion",
+    "artifactName": "Claude-Companion-${version}-${arch}.${ext}",
+    "icon": "assets/icon.png",
+    "files": [
+      "src/**/*",
+      "bridge/**/*",
+      "assets/**/*",
+      "package.json",
+      "LICENSE"
+    ],
+    "asarUnpack": [
+      "bridge/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Claude-Companion-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Claude-Companion-${version}-portable.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development"
+    }
+  }
+}

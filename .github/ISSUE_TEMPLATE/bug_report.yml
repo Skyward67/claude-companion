@@ -1,0 +1,45 @@
+name: Bug report
+description: Something isn't working as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does the Claude session run?
+      multiple: true
+      options:
+        - Terminal
+        - VS Code
+        - Claude Desktop
+        - Buddy chat
+        - Not session-related
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Claude Companion version, OS, and `claude --version`
+      placeholder: 0.1.0, Windows 11, Claude Code 2.1.300
+    validations:
+      required: true
+  - type: dropdown
+    id: hooks
+    attributes:
+      label: Are the hooks connected?
+      options:
+        - 'Yes'
+        - 'No'
+        - Not sure
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Output from `npm run dev` helps a lot. Please remove anything private from transcripts or logs first.

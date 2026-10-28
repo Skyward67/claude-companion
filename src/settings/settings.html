@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>Claude Companion — Settings</title>
+    <link rel="stylesheet" href="settings.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo" id="logo"></div>
+      <div>
+        <h1 id="title">Claude Companion</h1>
+        <p class="sub">Your little buddy for Claude Code · <span id="version"></span></p>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="display">Display</button>
+      <button role="tab" data-tab="look">Look</button>
+      <button role="tab" data-tab="data">Data</button>
+      <button role="tab" data-tab="alerts">Alerts</button>
+      <button role="tab" data-tab="connect">Connect</button>
+    </nav>
+    <p class="live">Changes apply to the buddy right away.</p>
+
+    <!-- ===================== Display ===================== -->
+    <div class="panel" data-panel="display">
+      <section>
+        <h2>Layout</h2>
+        <div class="presets" id="presets"></div>
+      </section>
+
+      <section>
+        <h2>What the buddy shows</h2>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-d="showTokens" /> Tokens card</label>
+          <select data-d="tokenMetric">
+            <option value="session">This session’s tokens</option>
+            <option value="output">This session’s output</option>
+            <option value="today">Today, all sessions</option>
+            <option value="context">Context window fill</option>
+          </select>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-d="showCredits" /> Credits card</label>
+          <select data-d="creditsMode">
+            <option value="auto">Automatic</option>
+            <option value="plan">Plan limits (5h / weekly)</option>
+            <option value="budget">Budget left</option>
+            <option value="today">Spend today</option>
+            <option value="session">This session’s cost</option>
+          </select>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-d="showTasks" /> Task progress bar</label>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-d="showCrew" /> Other sessions (mini buddies)</label>
+          <div class="inline"><span class="unit">up to</span><input type="number" data-d="crewSize" min="1" max="6" /></div>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-d="showHelpers" /> Helpers (subagents)</label>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-d="showFooter" /> Project &amp; model line</label>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-d="showCost" /> Money amounts</label>
+          <span class="desc">Hide this if you’re on a subscription and only care about limits.</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>Speech bubbles</h2>
+        <div class="row">
+          <div class="label">What Claude says</div>
+          <select data-d="bubbleLevel">
+            <option value="all">Everything (each step)</option>
+            <option value="important">Important only (tasks, done, errors)</option>
+            <option value="decisions">Only when I’m needed</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="label">Bubbles stay for</div>
+          <div class="inline"><input type="number" data-d="bubbleSeconds" min="2" max="30" /><span class="unit">seconds</span></div>
+        </div>
+        <p class="foot">Questions and permission requests always stay up until you answer (unless bubbles are off).</p>
+      </section>
+      <button class="link" data-reset>Reset display &amp; look to defaults</button>
+    </div>
+
+    <!-- ===================== Look ===================== -->
+    <div class="panel" data-panel="look">
+      <section>
+        <h2>Your buddy</h2>
+        <div class="row">
+          <div class="label">Name</div>
+          <input type="text" id="buddyName" maxlength="24" placeholder="Give it a name" />
+        </div>
+        <div class="row">
+          <div class="label">Colour</div>
+          <div class="swatches" id="swatches"></div>
+        </div>
+        <div class="row">
+          <div class="label">Movement</div>
+          <select data-d="motion">
+            <option value="full">Lively</option>
+            <option value="reduced">Calm (no hopping)</option>
+            <option value="off">Still</option>
+          </select>
+        </div>
+        <label class="check"><input type="checkbox" data-d="eyesFollow" /> Eyes follow the mouse pointer</label>
+      </section>
+
+      <section>
+        <h2>Cards</h2>
+        <div class="row">
+          <div class="label">Theme</div>
+          <select data-d="theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="label">Opacity</div>
+          <div class="inline"><input type="range" data-d="cardOpacity" min="0.4" max="1" step="0.05" /><span class="unit" id="opacity-val"></span></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Size &amp; place</h2>
+        <div class="row">
+          <div class="label">Size</div>
+          <select id="scale">
+            <option value="0.8">Small</option>
+            <option value="1">Normal</option>
+            <option value="1.25">Large</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="label">Screen</div>
+          <select id="display"></select>
+        </div>
+        <label class="check"><input type="checkbox" id="alwaysOnTop" /> Keep the buddy above other windows</label>
+      </section>
+      <button class="link" data-reset>Reset display &amp; look to defaults</button>
+    </div>
+
+    <!-- ===================== Data ===================== -->
+    <div class="panel" data-panel="data">
+      <section>
+        <h2>Which sessions to follow</h2>
+        <div class="row">
+          <div class="label">Count a session as active for</div>
+          <div class="inline"><input type="number" data-d="activeMinutes" min="5" max="1440" /><span class="unit">minutes</span></div>
+        </div>
+        <div class="row">
+          <div class="label">Fall asleep after</div>
+          <div class="inline"><input type="number" id="sleepAfterMin" min="1" max="240" /><span class="unit">minutes idle</span></div>
+        </div>
+        <div class="row column">
+          <div class="label">Projects to ignore</div>
+          <input type="text" id="hiddenProjects" placeholder="e.g. scratch, playground" />
+          <div class="desc">Folder names, separated by commas. Their sessions won’t appear or send alerts (their tokens still count in totals).</div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Budget</h2>
+        <div class="row">
+          <div>
+            <div class="label">Spending budget</div>
+            <div class="desc">Shown in the credits card. Spend is estimated from tokens at API list prices.</div>
+          </div>
+          <div class="inline">
+            <span class="dollar">$</span><input type="number" id="budget-amount" min="0" step="1" />
+            <select id="budget-period">
+              <option value="none">off</option>
+              <option value="5h">per 5 hours</option>
+              <option value="day">per day</option>
+              <option value="week">per 7 days</option>
+              <option value="month">per month</option>
+            </select>
+          </div>
+        </div>
+        <p class="foot" id="spend"></p>
+      </section>
+    </div>
+
+    <!-- ===================== Alerts ===================== -->
+    <div class="panel" data-panel="alerts">
+      <section>
+        <h2>Notifications</h2>
+        <label class="check"><input type="checkbox" id="notifyOnDecision" /> Notify me when Claude needs a decision</label>
+        <label class="check"><input type="checkbox" id="notifyOnDone" /> Notify me when Claude finishes a turn</label>
+        <p class="foot">Clicking a notification from a VS Code session opens that VS Code window.</p>
+      </section>
+      <section>
+        <h2>Answering from the buddy</h2>
+        <label class="check"><input type="checkbox" id="answerFromBuddy" /> Let me answer Claude’s permission prompts, questions and plans in the buddy</label>
+        <p class="foot">Works for VS Code and Claude Desktop sessions once the hooks are connected. Claude’s own prompt stays open too, and whichever you answer first wins. Terminal sessions are answered through their channel (see Connect). Buddy chats are always answered here.</p>
+      </section>
+      <section>
+        <h2>Startup</h2>
+        <label class="check"><input type="checkbox" id="login" /> Start when I log in</label>
+      </section>
+    </div>
+
+    <!-- ===================== Connect ===================== -->
+    <div class="panel" data-panel="connect">
+      <section>
+        <h2>Claude Code connection</h2>
+        <div class="row">
+          <div>
+            <div class="label">Live events (hooks)</div>
+            <div class="desc">Lets the buddy know about permission prompts, questions and finished turns the moment they happen.</div>
+          </div>
+          <div class="status-wrap">
+            <span class="pill" id="hooks-pill"></span>
+            <button id="hooks-btn"></button>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Plan usage (status line)</div>
+            <div class="desc">Shows your claude.ai 5-hour and weekly limits. Claude Code only shares these with its status line, so this installs a tiny Node.js bridge there (your existing status line keeps working). Terminal sessions only.</div>
+          </div>
+          <div class="status-wrap">
+            <span class="pill" id="sl-pill"></span>
+            <button id="sl-btn"></button>
+          </div>
+        </div>
+        <p class="foot">
+          Without hooks the buddy still follows tokens, tasks and progress by reading transcripts in <code>~/.claude/projects</code>.
+          <a href="#" id="reveal">Show Claude settings file</a>
+        </p>
+        <p class="foot warn" id="server-error" hidden></p>
+      </section>
+
+      <section>
+        <h2>Chat</h2>
+        <div class="row column">
+          <div class="label">Type into terminal sessions</div>
+          <div class="desc">Start Claude Code with this command and the buddy can send it messages and answer its prompts. Channels are a Claude Code research preview, so it shows a one-time developer warning when it starts.</div>
+          <code class="cmd" id="terminal-cmd"></code>
+          <div class="inline"><button id="copy-cmd">Copy command</button><span class="unit" id="channels-live"></span></div>
+        </div>
+        <div class="row column">
+          <div class="label">Buddy chats</div>
+          <div class="desc">New chats started from the buddy run this Claude Code, in the folder you pick, with your usual login.</div>
+          <code class="cmd" id="claude-path"></code>
+          <div class="inline"><button id="pick-claude">Change…</button><button id="auto-claude" class="link-btn">Find automatically</button></div>
+        </div>
+        <p class="foot">VS Code sessions: messages open in VS Code ready to send. Claude Desktop sessions can’t receive messages from other apps, but you can still answer their prompts here.</p>
+      </section>
+    </div>
+
+    <script src="settings.js"></script>
+  </body>
+</html>

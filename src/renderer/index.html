@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>Claude Companion</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <div id="pop" class="pop interactive" hidden></div>
+
+      <div id="chat" class="chat interactive" hidden>
+        <div class="chat-head">
+          <span class="src-dot" id="chat-src"></span>
+          <div class="chat-title"><b id="chat-title"></b><span id="chat-sub"></span></div>
+          <button id="chat-stop" class="chat-icon" title="Stop this buddy chat" hidden>■</button>
+          <button id="chat-new" class="chat-icon" title="New buddy chat">＋</button>
+          <button id="chat-close" class="chat-icon" title="Close (Esc)">✕</button>
+        </div>
+        <div id="chat-log" class="chat-log"></div>
+        <div id="chat-actions" class="chat-actions"></div>
+        <form id="chat-form" class="chat-form">
+          <textarea id="chat-input" rows="1" placeholder="Message Claude…"></textarea>
+          <button id="chat-send" type="submit">Send</button>
+        </form>
+        <div id="chat-hint" class="chat-hint"></div>
+
+        <div id="chat-newform" class="chat-newform" hidden>
+          <div class="nf-title">New buddy chat</div>
+          <div class="nf-desc">Runs Claude Code right here in the buddy, in the folder you pick.</div>
+          <div class="nf-row"><input id="new-cwd" readonly /><button id="new-pick" type="button">Folder…</button></div>
+          <textarea id="new-text" rows="3" placeholder="What should Claude do?"></textarea>
+          <div class="nf-actions"><button id="new-cancel" type="button">Cancel</button><button id="new-start" type="button" class="primary">Start</button></div>
+          <div id="new-hint" class="chat-hint"></div>
+        </div>
+      </div>
+
+      <button id="attention" class="attention interactive" hidden></button>
+
+      <div id="bubble" class="bubble" hidden>
+        <div class="bubble-tag"></div>
+        <div class="bubble-text"></div>
+        <div class="bubble-jump">Open in VS Code ↗</div>
+        <div class="bubble-buttons" id="bubble-buttons"></div>
+      </div>
+
+      <div id="row">
+        <div id="tokens" class="chip interactive" data-pop="tokens">
+          <div class="chip-label" id="tok-label">Tokens</div>
+          <div class="chip-big" id="tok-total">—</div>
+          <div class="chip-sub">
+            <svg class="ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" class="ring-bg" /><circle cx="10" cy="10" r="8" class="ring-fg" id="ctx-ring" /></svg>
+            <span id="ctx-label">ctx —</span>
+          </div>
+        </div>
+
+        <div id="buddy" class="interactive">
+          <div id="char"></div>
+          <div id="helpers" class="helpers interactive" data-pop="helpers" hidden></div>
+          <button id="chat-toggle" class="chat-toggle" title="Chat with Claude">💬<span id="chat-badge" class="chat-badge" hidden></span></button>
+        </div>
+
+        <div id="credits" class="chip interactive" data-pop="credits">
+          <div class="chip-label" id="cred-label">Today</div>
+          <div id="cred-body"></div>
+        </div>
+      </div>
+
+      <div id="tasks" class="tasks interactive" data-pop="tasks" hidden>
+        <div class="tasks-head">
+          <span class="tasks-count" id="tasks-count"></span>
+          <span class="tasks-current" id="tasks-current"></span>
+        </div>
+        <div class="bar"><div class="bar-fill" id="tasks-fill"></div></div>
+      </div>
+
+      <div id="crew" class="crew" hidden></div>
+
+      <div id="footer" class="footer interactive" data-pop="sessions">
+        <span id="src" class="src-dot"></span>
+        <span id="project" class="project"></span>
+        <span id="model" class="model"></span>
+        <button id="auto" class="connect" hidden title="Stop following this session and go back to automatic">↺ auto</button>
+        <button id="connect" class="connect" hidden title="Connect to Claude Code for live permission alerts">⚡ connect</button>
+      </div>
+    </div>
+
+    <script src="character.js"></script>
+    <script src="demo.js"></script>
+    <script src="app.js"></script>
+    <script src="chat.js"></script>
+  </body>
+</html>

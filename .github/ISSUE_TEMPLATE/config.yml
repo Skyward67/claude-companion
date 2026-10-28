@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Claude Code issues
+    url: https://github.com/anthropics/claude-code/issues
+    about: Problems with Claude Code itself belong in the Claude Code repository.
