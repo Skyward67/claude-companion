@@ -2,6 +2,10 @@
    The app sets classes on the <svg> (see docs/characters.md):
      mood-*    idle | thinking | working | waiting | done | error | sleeping | compacting | pet
      act-*     read | search | edit | run | web | agent | plan | tool | ask
+     do-*      typing | coding | reading | searching | running | browsing | planning
+               (what it acts out; always with mood-working, so these rules
+               come later and start with .char to win over the mood's)
+     quirk-*   look | stretch | scratch | hop | yawn (one-offs, idle or thinking)
      enter     re-added on every mood change, for one-shot animations
      busy      working for more than 90 seconds
      motion-*  full | reduced | off
@@ -241,9 +245,191 @@
   stroke-width: 2.5;
 }
 
+/* activity parts */
+.act {
+  display: none;
+}
+.paw {
+  fill: var(--body-limb);
+  stroke: var(--body-line);
+  stroke-width: 2.4;
+}
+.a-glow {
+  fill: url(#glowGrad);
+  opacity: 0.5;
+}
+.lap-lid {
+  fill: #d9dee4;
+  stroke: #7f8891;
+  stroke-width: 2;
+}
+.lap-base {
+  fill: #aab2ba;
+  stroke: #7f8891;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.lap-logo {
+  fill: #ffe6c7;
+  stroke: var(--body-lo);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+.paw-l,
+.paw-r {
+  transform-origin: center;
+}
+.book-cover {
+  fill: #b5523b;
+  stroke: #7d3324;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.book-page {
+  fill: #fffaf0;
+  stroke: #c9b5a8;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.book-text {
+  fill: none;
+  stroke: #c9b5a8;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.book-flip {
+  opacity: 0;
+  transform-origin: 0% 50%;
+}
+.lens-big {
+  fill: rgba(190, 228, 255, 0.32);
+  stroke: #5b4a42;
+  stroke-width: 3.4;
+}
+.lens-shine {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+.lens-handle {
+  stroke: #5b4a42;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.tw {
+  fill: #262321;
+  stroke: #6d625b;
+  stroke-width: 1.8;
+}
+.tw-out,
+.tw-dim,
+.tw-warn {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.tw-out {
+  stroke: #7cf0a8;
+}
+.tw-dim {
+  stroke: #8a8079;
+}
+.tw-warn {
+  stroke: #ffd166;
+}
+.bw {
+  fill: #fffdfa;
+  stroke: #8d7b6f;
+  stroke-width: 1.8;
+}
+.bw-bar {
+  fill: #e9e1da;
+  stroke: #8d7b6f;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.bw-url {
+  fill: #fffdfa;
+}
+.bw-dot {
+  fill: #ff6b6b;
+}
+.bw-hero {
+  fill: #cfe9fb;
+}
+.bw-globe {
+  fill: #74c7f5;
+  stroke: #2e7db5;
+  stroke-width: 1.2;
+}
+.bw-text {
+  fill: none;
+  stroke: #c9b5a8;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+.cb {
+  fill: #fff;
+  stroke: #8d7b6f;
+  stroke-width: 1.4;
+}
+.tick {
+  fill: none;
+  stroke: #43b98a;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+}
+.tb {
+  fill: #fffaf5;
+  stroke: #c9b5a8;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.tdot {
+  fill: #8d7b6f;
+  animation: dot 1.1s ease-in-out infinite;
+}
+.tdot:nth-of-type(2) {
+  animation-delay: 0.15s;
+}
+.tdot:nth-of-type(3) {
+  animation-delay: 0.3s;
+}
+.glyph {
+  font: 800 13px Consolas, 'Cascadia Mono', Menlo, monospace;
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.6;
+  opacity: 0;
+  animation: code-up 2.4s ease-out infinite;
+}
+.glyph:nth-of-type(1) {
+  fill: #7cf0a8;
+}
+.glyph:nth-of-type(2) {
+  fill: #74c7f5;
+  animation-delay: 0.8s;
+}
+.glyph:nth-of-type(3) {
+  fill: #ffd166;
+  font-size: 16px;
+  animation-delay: 1.6s;
+}
+
 /* effects */
 .fx {
   display: none;
+}
+.fx-huh {
+  fill: #fffaf5;
+  stroke: #8d7b6f;
+  stroke-width: 1;
+  font: 900 20px 'Segoe UI', sans-serif;
+  transform-origin: center;
 }
 .fx-thought circle {
   fill: #f6ece5;
@@ -549,6 +735,253 @@
   opacity: 0.85;
 }
 
+/* ---------- activities (do-*) ----------
+   Each shows its own parts instead of the tool prop, and takes over the
+   working mood's arms, face and movement. */
+.do-typing .props,
+.do-coding .props,
+.do-reading .props,
+.do-searching .props,
+.do-running .props,
+.do-browsing .props,
+.do-planning .props {
+  display: none;
+}
+
+/* Typing a reply: paws on the laptop in bursts, "…" over its head. */
+.do-typing .a-laptop,
+.do-typing .a-dots,
+.do-coding .a-laptop,
+.do-coding .a-code,
+.do-coding .a-glow {
+  display: inline;
+}
+.char.do-typing .arm,
+.char.do-coding .arm,
+.char.do-reading .arm,
+.char.do-planning .arm {
+  display: none;
+}
+.char.do-typing .wrap {
+  animation: bob 1.3s ease-in-out infinite;
+}
+.do-typing .paw-l {
+  animation: type-burst 1.8s linear infinite;
+}
+.do-typing .paw-r {
+  animation: type-burst 1.8s linear -0.12s infinite;
+}
+.char.do-typing .m-flat {
+  display: none;
+}
+.char.do-typing .m-smile {
+  display: inline;
+}
+
+/* Coding: fast, steady typing, focused eyes, code flying off the screen. */
+.char.do-coding .wrap {
+  animation: bob 0.5s ease-in-out infinite;
+}
+.do-coding .paw-l {
+  animation: type 0.22s ease-in-out infinite alternate;
+}
+.do-coding .paw-r {
+  animation: type 0.22s ease-in-out -0.11s infinite alternate;
+}
+.char.do-coding .eye {
+  transform: scaleY(0.72);
+}
+.do-coding .a-glow {
+  animation: glow 2.6s ease-in-out infinite;
+}
+
+/* Reading: holds the book still, eyes running along the lines. */
+.do-reading .a-book {
+  display: inline;
+}
+.char.do-reading .wrap {
+  animation: none;
+}
+.char.do-reading .body {
+  animation: breathe 3.4s ease-in-out infinite;
+}
+.char.do-reading .eye {
+  animation: read-lines 2.6s ease-in-out infinite;
+}
+.char.do-reading .spark {
+  animation: twinkle 3.2s ease-in-out infinite;
+}
+.do-reading .book-flip {
+  animation: page-turn 5.2s ease-in-out infinite;
+}
+
+/* Searching: sweeps a magnifier from eye to eye, leaning into it. */
+.do-searching .a-lens {
+  display: inline;
+  animation: lens-sweep 3s ease-in-out infinite;
+}
+.char.do-searching .arm-r {
+  display: none;
+}
+.char.do-searching .wrap {
+  animation: none;
+}
+.char.do-searching .body {
+  animation: lean 3s ease-in-out infinite;
+}
+.char.do-searching .eye-r {
+  animation: magnify-r 3s ease-in-out infinite;
+}
+.char.do-searching .eye-l {
+  animation: magnify-l 3s ease-in-out infinite;
+}
+.char.do-searching .m-flat {
+  display: none;
+}
+.char.do-searching .m-o {
+  display: inline;
+  transform: scale(0.6);
+}
+
+/* Running a command: watches the output, tapping a foot. */
+.do-running .a-term {
+  display: inline;
+}
+.do-running .tw-lines {
+  animation: scroll-out 1.5s steps(3) infinite;
+}
+.char.do-running .wrap {
+  animation: none;
+}
+.char.do-running .body {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+.char.do-running .arm-r {
+  animation: none;
+  transform: rotate(-48deg);
+}
+.char.do-running .arm-l {
+  animation: none;
+}
+.do-running .foot-r {
+  transform-origin: 15% 100%;
+  animation: foot-tap 1.3s ease-in-out infinite;
+}
+
+/* Browsing: scrolls a page with a swipe now and then. */
+.do-browsing .a-web {
+  display: inline;
+}
+.do-browsing .bw-page {
+  animation: scroll-page 4.8s ease-in-out infinite;
+}
+.char.do-browsing .wrap {
+  animation: none;
+}
+.char.do-browsing .body {
+  animation: breathe 3s ease-in-out infinite;
+}
+.char.do-browsing .arm-r {
+  animation: swipe 4.8s ease-in-out infinite;
+}
+.char.do-browsing .arm-l {
+  animation: none;
+}
+
+/* Planning: ticks the list off, line by line. */
+.do-planning .a-clip {
+  display: inline;
+}
+.char.do-planning .wrap {
+  animation: none;
+}
+.char.do-planning .body {
+  animation: breathe 2.8s ease-in-out infinite;
+}
+.do-planning .tick-1 {
+  animation: tick-1 3.6s ease-out infinite;
+}
+.do-planning .tick-2 {
+  animation: tick-2 3.6s ease-out infinite;
+}
+.do-planning .tick-3 {
+  animation: tick-3 3.6s ease-out infinite;
+}
+
+/* Tiny helper clones (subagents) are too small for the floating extras. */
+.v-helper .a-fx {
+  display: none !important;
+}
+
+/* ---------- quirks (quirk-*) ----------
+   Played once, for a couple of seconds, while idle or thinking. */
+.char.quirk-look .eye {
+  animation: look-around 2.4s ease-in-out;
+}
+.char.quirk-look .sprout {
+  animation: sprout-look 2.4s ease-in-out;
+}
+
+.char.quirk-stretch .arm-l {
+  animation: stretch-l 2.4s ease-in-out;
+}
+.char.quirk-stretch .arm-r {
+  animation: stretch-r 2.4s ease-in-out;
+}
+.char.quirk-stretch .body {
+  animation: stretch-body 2.4s ease-in-out;
+}
+.char.quirk-stretch .eyes,
+.char.quirk-yawn .eyes {
+  display: none;
+}
+.char.quirk-stretch .eyes-closed,
+.char.quirk-yawn .eyes-closed {
+  display: inline;
+}
+
+.char.quirk-scratch .arm-r {
+  animation: scratch 2.4s ease-in-out;
+}
+.char.quirk-scratch .fx-huh {
+  display: inline;
+  animation: huh 2.4s ease-out;
+}
+.char.quirk-scratch .fx-thought {
+  display: none;
+}
+
+.char.quirk-hop .wrap {
+  animation: jump 0.55s cubic-bezier(0.3, 0.6, 0.4, 1) 2;
+}
+.char.quirk-hop .shadow {
+  animation: shadow-jump 0.55s cubic-bezier(0.3, 0.6, 0.4, 1) 2;
+}
+.char.quirk-hop .eyes {
+  display: none;
+}
+.char.quirk-hop .eyes-happy {
+  display: inline;
+}
+
+.char.quirk-yawn .m-smile,
+.char.quirk-yawn .m-flat {
+  display: none;
+}
+.char.quirk-yawn .m-o {
+  display: inline;
+  animation: yawn 2.4s ease-in-out;
+}
+.char.quirk-yawn .body {
+  animation: stretch-body 2.4s ease-in-out;
+}
+.char.quirk-yawn .arm-l {
+  animation: yawn-l 2.4s ease-in-out;
+}
+.char.quirk-yawn .arm-r {
+  animation: yawn-r 2.4s ease-in-out;
+}
+
 /* ---------- keyframes ---------- */
 @keyframes blink {
   0%,
@@ -829,6 +1262,368 @@
     opacity: 0;
   }
 }
+@keyframes dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+@keyframes code-up {
+  0% {
+    opacity: 0;
+    transform: translate(0, 6px) scale(0.7);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(4px, -16px) scale(1.05);
+  }
+}
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes type {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-3.5px);
+  }
+}
+/* A burst of keys, then a pause to read it back. */
+@keyframes type-burst {
+  0%,
+  10%,
+  20%,
+  30%,
+  40%,
+  62%,
+  72%,
+  100% {
+    transform: translateY(0);
+  }
+  5%,
+  15%,
+  25%,
+  35%,
+  67% {
+    transform: translateY(-3.5px);
+  }
+}
+/* Eyes along a line, back, down a line, and again. */
+@keyframes read-lines {
+  0%,
+  100% {
+    transform: translate(-2px, -0.5px);
+  }
+  40% {
+    transform: translate(2px, -0.5px);
+  }
+  50% {
+    transform: translate(-2px, 1px);
+  }
+  90% {
+    transform: translate(2px, 1px);
+  }
+}
+@keyframes page-turn {
+  0%,
+  70% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+  72% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  86% {
+    opacity: 1;
+    transform: scaleX(0.05);
+  }
+  98% {
+    opacity: 1;
+    transform: scaleX(-1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(-1);
+  }
+}
+@keyframes lens-sweep {
+  0%,
+  30%,
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+  45%,
+  80% {
+    transform: translate(-32px, 1px) rotate(-6deg);
+  }
+}
+@keyframes magnify-r {
+  0%,
+  30%,
+  95%,
+  100% {
+    transform: scale(1.3);
+  }
+  42%,
+  85% {
+    transform: scale(1);
+  }
+}
+@keyframes magnify-l {
+  0%,
+  35%,
+  88%,
+  100% {
+    transform: scale(1);
+  }
+  48%,
+  80% {
+    transform: scale(1.3);
+  }
+}
+@keyframes lean {
+  0%,
+  30%,
+  100% {
+    transform: rotate(2deg);
+  }
+  45%,
+  80% {
+    transform: rotate(-2.5deg);
+  }
+}
+@keyframes scroll-out {
+  to {
+    transform: translateY(-18px);
+  }
+}
+@keyframes scroll-page {
+  0%,
+  22% {
+    transform: translateY(0);
+  }
+  32%,
+  55% {
+    transform: translateY(-14px);
+  }
+  65%,
+  88% {
+    transform: translateY(-26px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes swipe {
+  0%,
+  22%,
+  55%,
+  88%,
+  100% {
+    transform: rotate(-40deg);
+  }
+  28%,
+  60% {
+    transform: rotate(-62deg);
+  }
+}
+@keyframes foot-tap {
+  0%,
+  30%,
+  60%,
+  100% {
+    transform: rotate(0);
+  }
+  15%,
+  45% {
+    transform: rotate(-16deg);
+  }
+}
+@keyframes tick-1 {
+  0%,
+  8% {
+    stroke-dashoffset: 14;
+  }
+  18%,
+  88% {
+    stroke-dashoffset: 0;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 14;
+  }
+}
+@keyframes tick-2 {
+  0%,
+  30% {
+    stroke-dashoffset: 14;
+  }
+  40%,
+  88% {
+    stroke-dashoffset: 0;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 14;
+  }
+}
+@keyframes tick-3 {
+  0%,
+  52% {
+    stroke-dashoffset: 14;
+  }
+  62%,
+  88% {
+    stroke-dashoffset: 0;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 14;
+  }
+}
+@keyframes look-around {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  15%,
+  40% {
+    transform: translate(-3px, -0.5px);
+  }
+  55%,
+  80% {
+    transform: translate(3px, -0.5px);
+  }
+}
+@keyframes sprout-look {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  15%,
+  40% {
+    transform: rotate(-10deg);
+  }
+  55%,
+  80% {
+    transform: rotate(10deg);
+  }
+}
+@keyframes stretch-l {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  30%,
+  70% {
+    transform: rotate(160deg);
+  }
+}
+@keyframes stretch-r {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  30%,
+  70% {
+    transform: rotate(-160deg);
+  }
+}
+@keyframes stretch-body {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  30%,
+  70% {
+    transform: scale(0.96, 1.07);
+  }
+  82% {
+    transform: scale(1.04, 0.95);
+  }
+}
+@keyframes scratch {
+  0%,
+  100% {
+    transform: rotate(-35deg);
+  }
+  20% {
+    transform: rotate(-168deg);
+  }
+  30%,
+  50%,
+  70% {
+    transform: rotate(-176deg);
+  }
+  40%,
+  60%,
+  80% {
+    transform: rotate(-160deg);
+  }
+}
+@keyframes huh {
+  0%,
+  15% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.5);
+  }
+  30%,
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(1);
+  }
+}
+@keyframes yawn {
+  0%,
+  100% {
+    transform: scale(0.6);
+  }
+  35%,
+  70% {
+    transform: scale(1.5, 1.8);
+  }
+}
+@keyframes yawn-l {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  35%,
+  70% {
+    transform: rotate(40deg);
+  }
+}
+@keyframes yawn-r {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  35%,
+  70% {
+    transform: rotate(-40deg);
+  }
+}
 
 /* Calm movement: no hopping, bobbing or jumping, but the buddy still
    breathes, blinks and shows its effects. (Still stops every animation by
@@ -842,6 +1637,11 @@
 .motion-off .fx-zzz text,
 .motion-off .fx-sparkles .sp,
 .motion-off .fx-hearts path,
-.motion-off .fx-sweat path {
+.motion-off .fx-sweat path,
+.motion-off .glyph,
+.motion-off .fx-huh {
   opacity: 1;
+}
+.motion-off .tick {
+  stroke-dashoffset: 0;
 }

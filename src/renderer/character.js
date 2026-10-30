@@ -7,6 +7,9 @@
 // classes set here on the pack's <svg>:
 //   mood-*    idle | thinking | working | waiting | done | error | sleeping | compacting | pet
 //   act-*     read | search | edit | run | web | agent | plan | tool | ask (working and waiting only)
+//   do-*      typing | coding | reading | searching | running | browsing | planning
+//             (what the buddy acts out, always with mood-working; activity.js)
+//   quirk-*   look | stretch | scratch | hop | yawn (a one-off, while idle or thinking)
 //   enter     re-added on every mood change, to restart one-shot animations
 //   busy      working for more than 90 seconds
 //   motion-*  full | reduced | off (Settings → Look → Movement)
@@ -14,9 +17,15 @@
 
 const MOODS = ['idle', 'thinking', 'working', 'waiting', 'done', 'error', 'sleeping', 'compacting', 'pet'];
 const ACTS = ['read', 'search', 'edit', 'run', 'web', 'agent', 'plan', 'tool', 'ask'];
+const ACTIVITIES = ['typing', 'coding', 'reading', 'searching', 'running', 'browsing', 'planning'];
+const QUIRKS = ['look', 'stretch', 'scratch', 'hop', 'yawn'];
 const MOTIONS = ['full', 'reduced', 'off'];
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const DEFAULT_GAZE = { reach: [4, 3.5], moods: { thinking: [-0.5, -1], working: [0.9, 0.35], compacting: [0, 0], sleeping: [0, 0] } };
+const DEFAULT_GAZE = {
+  reach: [4, 3.5],
+  moods: { thinking: [-0.5, -1], working: [0.9, 0.35], compacting: [0, 0], sleeping: [0, 0] },
+  activities: { typing: [0, 0.8], coding: [0, 0.8], reading: [0, 0.9], searching: [0, 0], running: [0.9, 0.3], browsing: [0.9, 0.1], planning: [0.1, 0.8] },
+};
 
 // Rules every pack gets before its own CSS (which can override the first two).
 const BASE_CSS = `
@@ -167,6 +176,8 @@ class Character {
     this.shadow = root.attachShadow({ mode: 'open' });
     this.mood = 'idle';
     this.act = null;
+    this.activity = null;
+    this.quirk = null;
     this.busy = false;
     this.gaze = { x: 0, y: 0 };
     for (const c of live) if (!c.host.isConnected) live.delete(c);
@@ -181,6 +192,8 @@ class Character {
     const svg = pack ? pack.template.cloneNode(true) : document.createElementNS(SVG_NS, 'svg');
     svg.classList.add('char', `v-${this.variant}`, `motion-${motion}`, `mood-${this.mood}`, 'enter');
     if (this.act) svg.classList.add(`act-${this.act}`);
+    if (this.activity) svg.classList.add(`do-${this.activity}`);
+    if (this.quirk) svg.classList.add(`quirk-${this.quirk}`);
     if (this.busy) svg.classList.add('busy');
     this.shadow.replaceChildren(svg);
     this.svg = svg;
@@ -207,6 +220,23 @@ class Character {
     this.applyGaze();
   }
 
+  // What the buddy acts out (do-*) and a one-off quirk (quirk-*), or null.
+  setDoing(activity, quirk) {
+    const a = ACTIVITIES.includes(activity) ? activity : null;
+    if (a !== this.activity) {
+      for (const x of ACTIVITIES) this.svg.classList.remove(`do-${x}`);
+      if (a) this.svg.classList.add(`do-${a}`);
+      this.activity = a;
+      this.applyGaze();
+    }
+    const q = QUIRKS.includes(quirk) ? quirk : null;
+    if (q !== this.quirk) {
+      for (const x of QUIRKS) this.svg.classList.remove(`quirk-${x}`);
+      if (q) this.svg.classList.add(`quirk-${q}`);
+      this.quirk = q;
+    }
+  }
+
   setBusy(on) {
     if (!!on === this.busy) return;
     this.busy = !!on;
@@ -222,7 +252,7 @@ class Character {
   applyGaze() {
     if (!this.look) return;
     const g = pack ? pack.gaze : DEFAULT_GAZE;
-    const [x, y] = g.moods[this.mood] || [this.gaze.x, this.gaze.y];
+    const [x, y] = (this.activity && g.activities && g.activities[this.activity]) || g.moods[this.mood] || [this.gaze.x, this.gaze.y];
     this.look.style.transform = `translate(${(x * g.reach[0]).toFixed(2)}px, ${(y * g.reach[1]).toFixed(2)}px)`;
   }
 }

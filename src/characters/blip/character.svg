@@ -2,8 +2,8 @@
   <!--
     Blip, a starter character. Every part has a class that character.css
     styles and animates; the app only adds classes to this <svg> element
-    (mood-*, act-*, enter, busy, motion-*, v-*). Keep the art inside the
-    160 × 160 viewBox: anything outside it is cut off.
+    (mood-*, act-*, do-*, quirk-*, enter, busy, motion-*, v-*). Keep the art
+    inside the 160 × 160 viewBox: anything outside it is cut off.
   -->
   <defs>
     <!-- Colours from Settings → Look → Colour, through CSS variables. -->
@@ -11,6 +11,8 @@
       <stop offset="0" style="stop-color: var(--body-hi)"/>
       <stop offset="1" style="stop-color: var(--body)"/>
     </linearGradient>
+    <!-- Keeps the scrolling code inside the screen. -->
+    <clipPath id="screenClip"><rect x="46" y="64" width="68" height="46" rx="15"/></clipPath>
   </defs>
 
   <!-- Stays on the ground while the robot hops. -->
@@ -49,6 +51,19 @@
         <path class="mouth m-flat" d="M73 100 H87"/>
         <ellipse class="mouth m-o" cx="80" cy="100" rx="4" ry="4.5"/>
       </g>
+
+      <!-- Activities on the screen, shown by the do-* classes. -->
+      <g class="act a-dots">
+        <circle cx="71" cy="100" r="2.6"/><circle cx="80" cy="100" r="2.6"/><circle cx="89" cy="100" r="2.6"/>
+      </g>
+      <g class="act a-code" clip-path="url(#screenClip)">
+        <!-- Three lines, repeated, so scrolling by three loops seamlessly. -->
+        <g class="code-lines">
+          <path class="code c1" d="M55 75 H71 M55 99 H71 M55 123 H71"/>
+          <path class="code c2" d="M61 83 H101 M61 107 H101 M61 131 H101"/>
+          <path class="code c3" d="M61 91 H85 M61 115 H85 M61 139 H85"/>
+        </g>
+      </g>
     </g>
 
     <!-- One prop per tool, shown by the act-* classes. Emoji keep this
@@ -64,6 +79,11 @@
       <text class="prop p-ask" x="143" y="122">❓</text>
       <text class="prop p-tool" x="143" y="122">⚙️</text>
     </g>
+
+    <!-- Held for reading and searching. Running, browsing and planning
+         keep the tool's prop above (act-* comes along with do-*). -->
+    <text class="act a-book" x="80" y="146">📖</text>
+    <text class="act a-lens" x="98" y="96">🔍</text>
   </g>
 
   <!-- Effects, each shown by one mood. -->

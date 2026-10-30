@@ -5,6 +5,10 @@
      mood-*    idle | thinking | working | waiting | done | error | sleeping | compacting | pet
      act-*     read | search | edit | run | web | agent | plan | tool | ask
                (the tool Claude is using; only while working or waiting)
+     do-*      typing | coding | reading | searching | running | browsing | planning
+               (what the buddy acts out; always with mood-working)
+     quirk-*   look | stretch | scratch | hop | yawn
+               (a one-off for a couple of seconds, while idle or thinking)
      enter     re-added on every mood change: use it for one-shot animations
      busy      working for more than 90 seconds
      motion-*  full | reduced | off (Settings → Look → Movement; "off" stops
@@ -349,6 +353,120 @@
   display: inline;
 }
 
+/* ---------- activities (do-*) ----------
+   An activity always comes with mood-working, so these rules start with
+   .char to win over the working mood's. */
+
+.act {
+  display: none;
+  font: 26px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+  text-anchor: middle;
+  transform-origin: center;
+}
+.a-dots circle {
+  fill: #7cf0ff;
+  animation: dot 1.1s ease-in-out infinite;
+}
+.a-dots circle:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.a-dots circle:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.code {
+  fill: none;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+.c1 {
+  stroke: #7cf0a8;
+}
+.c2 {
+  stroke: #7cf0ff;
+}
+.c3 {
+  stroke: #ffd166;
+}
+
+/* Our own pictures replace the tool's prop for these four. */
+.do-typing .props,
+.do-coding .props,
+.do-reading .props,
+.do-searching .props {
+  display: none;
+}
+
+/* Typing a reply: "…" on the screen instead of a mouth. */
+.do-typing .a-dots {
+  display: inline;
+}
+.char.do-typing .mouth {
+  display: none;
+}
+
+/* Coding: the screen fills with code, scrolling by. */
+.do-coding .a-code {
+  display: inline;
+}
+.char.do-coding .face {
+  display: none;
+}
+.do-coding .code-lines {
+  animation: scroll 1.5s steps(3) infinite;
+}
+
+/* Reading: holds a book, eyes running along the lines. */
+.do-reading .a-book {
+  display: inline;
+}
+.char.do-reading .wrap {
+  animation: none;
+}
+.char.do-reading .eye {
+  animation: read 2.6s ease-in-out infinite;
+}
+
+/* Searching: a magnifier sweeping across the screen. */
+.do-searching .a-lens {
+  display: inline;
+  animation: sweep 3s ease-in-out infinite;
+}
+
+/* ---------- quirks (quirk-*) ----------
+   Played once while idle or thinking: keep them to a couple of seconds. */
+
+.char.quirk-look .eye {
+  animation: look-around 2.4s ease-in-out;
+}
+.char.quirk-stretch .arm-l {
+  animation: stretch-l 2.4s ease-in-out;
+}
+.char.quirk-stretch .arm-r {
+  animation: stretch-r 2.4s ease-in-out;
+}
+.char.quirk-scratch .arm-r {
+  animation: scratch 2.4s ease-in-out;
+}
+.char.quirk-scratch .antenna {
+  animation: wiggle 0.4s ease-in-out 3;
+}
+.char.quirk-hop .wrap {
+  animation: jump 0.55s ease-out 2;
+}
+.char.quirk-yawn .eyes,
+.char.quirk-yawn .m-smile,
+.char.quirk-yawn .m-flat {
+  display: none;
+}
+.char.quirk-yawn .eyes-closed,
+.char.quirk-yawn .m-o {
+  display: inline;
+}
+.char.quirk-yawn .m-o {
+  transform-origin: center;
+  animation: yawn 2.4s ease-in-out;
+}
+
 /* ---------- sizes and settings ---------- */
 
 /* The tiny helper clones (subagents) are too small for effects. */
@@ -515,5 +633,83 @@
   100% {
     opacity: 0;
     transform: translateY(8px);
+  }
+}
+@keyframes dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+@keyframes scroll {
+  to {
+    transform: translateY(-24px);
+  }
+}
+@keyframes read {
+  0%,
+  100% {
+    transform: translateX(-2px);
+  }
+  45% {
+    transform: translateX(2px);
+  }
+}
+@keyframes sweep {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  50% {
+    transform: translateX(-36px) rotate(-10deg);
+  }
+}
+@keyframes look-around {
+  15%,
+  40% {
+    transform: translateX(-3px);
+  }
+  55%,
+  80% {
+    transform: translateX(3px);
+  }
+}
+@keyframes stretch-l {
+  30%,
+  70% {
+    transform: rotate(160deg);
+  }
+}
+@keyframes stretch-r {
+  30%,
+  70% {
+    transform: rotate(-160deg);
+  }
+}
+@keyframes scratch {
+  20% {
+    transform: rotate(-165deg);
+  }
+  30%,
+  50%,
+  70% {
+    transform: rotate(-175deg);
+  }
+  40%,
+  60%,
+  80% {
+    transform: rotate(-158deg);
+  }
+}
+@keyframes yawn {
+  35%,
+  70% {
+    transform: scale(1.6, 1.9);
   }
 }

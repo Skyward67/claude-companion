@@ -99,11 +99,29 @@ Your character only needs an `idle` look. Anything you leave out falls back: a p
 | `tool` | Using any other tool (MCP servers and so on) |
 | `ask` | Waiting on your answer to a question or plan |
 
+**Activities**, acted out while Claude works (**Settings → Look → Activities**)
+
+Tool calls are quick, and most of a turn is Claude writing. So instead of thinking most of the time, the buddy acts out what Claude is most likely doing: the current tool, the last one for a moment after it ends, and typing (or coding, right after an edit) once Claude starts writing. An activity always comes with the `working` mood, plus the matching tool when there is one, so a character that doesn't draw activities shows its working look.
+
+| Activity | When Claude is… | Tool |
+| --- | --- | --- |
+| `typing` | Writing its reply | |
+| `coding` | Editing files, or writing more code after an edit | `edit` |
+| `reading` | Reading files, and taking in what it read | `read` |
+| `searching` | Searching files | `search` |
+| `running` | Running a command | `run` |
+| `browsing` | On the web | `web` |
+| `planning` | Updating its task list | `plan` |
+
+**Quirks**: little things the buddy does on its own for a couple of seconds, now and then, while idle or thinking for a while: `look` (looks around), `stretch`, `scratch` (scratches its head), `hop` and `yawn`.
+
+People can turn each activity and the quirks off, or make them more or less frequent, so don't put anything only there that the moods need.
+
 The same character is also used for the **mini buddies** (your other sessions, 44 px) and the **helpers** at the buddy's feet (subagents, 32 px). The main buddy is 150 px at Normal size. Keep the art readable when it's small.
 
 ## Pictures
 
-List your pictures under `poses`. Name each pose after a mood or a tool from the tables above. Only `idle` is required.
+List your pictures under `poses`. Name each pose after a mood, tool, activity or quirk from the tables above. Only `idle` is required.
 
 ```json
 {
@@ -131,7 +149,7 @@ A pose is either a file name or an object:
 | `fps` | Frames per second | `8` |
 | `loop` | `false` plays the frames once and stops on the last one | `true` |
 
-How poses are picked: a **tool** pose (like `edit`) wins over a **mood** pose (like `working`), which wins over `idle`. So with the file above, the buddy shows `typing.png` while editing, `working.png` while running a command, and `idle.png` while compacting.
+How poses are picked: a **quirk** or **activity** pose (like `coding`) wins over a **tool** pose (like `edit`), which wins over a **mood** pose (like `working`), which wins over `idle`. So with the file above, the buddy shows `typing.png` while editing, `working.png` while running a command, and `idle.png` while compacting. Activities come with their tool, so the `edit` pose also shows while Claude writes code between edits. A quirk pose with `"loop": false` plays once, which suits them.
 
 **Sprite sheets.** Put all the frames of one pose in a single row, left to right, each exactly `size` pixels: four 32 × 32 frames make a 128 × 32 image. Most pixel-art tools export this directly: in Aseprite use **File → Export Sprite Sheet** with *Horizontal Strip*; in Piskel, **Export → PNG** with one row. Animated GIF, APNG and WebP files also work as a single picture, with no `frames` needed.
 
@@ -149,6 +167,8 @@ Draw your character as an SVG and animate it with CSS. The app never moves anyth
 | --- | --- |
 | `mood-<mood>` | Always exactly one: `mood-idle`, `mood-working`… |
 | `act-<tool>` | The tool in use, while working or waiting: `act-edit`, `act-ask`… |
+| `do-<activity>` | What the buddy acts out, always with `mood-working`: `do-typing`, `do-reading`… |
+| `quirk-<quirk>` | A quirk, for 2.4 seconds while idle or thinking: `quirk-stretch`… |
 | `enter` | Added again every time the mood changes, so one-shot animations replay |
 | `busy` | Working for more than 90 seconds |
 | `motion-full`, `motion-reduced`, `motion-off` | **Settings → Look → Movement** |
@@ -171,6 +191,18 @@ So the whole recipe is: draw every part you need, hide the parts that only show 
 }
 @keyframes bob { 50% { transform: translateY(-3px); } }
 @keyframes jump { 40% { transform: translateY(-20px); } }
+```
+
+**Activities and quirks** go on top of a mood, so their rules need to win over the mood's: put them after the mood rules and start them with `.char` (the `<svg>` has that class too). A quirk plays once, so a plain animation with no repeat count is enough:
+
+```css
+/* A laptop while typing, and the arms stay down behind it. */
+.laptop { display: none; }
+.do-typing .laptop { display: inline; }
+.char.do-typing .arm { animation: none; }
+/* Look around now and then. */
+.char.quirk-look .eyes { animation: look 2.4s ease-in-out; }
+@keyframes look { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 ```
 
 ### A complete small character
@@ -225,7 +257,7 @@ So the whole recipe is: draw every part you need, hide the parts that only show 
 @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 ```
 
-For a complete example with every mood and a prop for every tool, copy **Blip** ([`character.svg`](../src/characters/blip/character.svg), [`character.css`](../src/characters/blip/character.css)). **Buddy** shows how far you can take it.
+For a complete example with every mood, a prop for every tool, a few activities and every quirk, copy **Blip** ([`character.svg`](../src/characters/blip/character.svg), [`character.css`](../src/characters/blip/character.css)). **Buddy** shows how far you can take it, with its own art for every activity.
 
 ### Drawing tips
 
@@ -261,11 +293,18 @@ Put the eyes (or whatever should look around) in a group with the class `look`. 
   "thinking": [-0.5, -1],
   "working": [0.9, 0.35],
   "sleeping": [0, 0],
-  "compacting": [0, 0]
+  "compacting": [0, 0],
+  "typing": [0, 0.8],
+  "coding": [0, 0.8],
+  "reading": [0, 0.9],
+  "searching": [0, 0],
+  "running": [0.9, 0.3],
+  "browsing": [0.9, 0.1],
+  "planning": [0.1, 0.8]
 }
 ```
 
-`reach` is how far `.look` moves, in SVG units, sideways and up and down. Each mood can have a fixed direction from `-1` to `1` (left/up to right/down); the defaults are shown above. Set a mood to `null` to make it follow the pointer too. With **Eyes follow the mouse pointer** off, the eyes look straight ahead except in the moods with a fixed direction.
+`reach` is how far `.look` moves, in SVG units, sideways and up and down. Each mood and activity can have a fixed direction from `-1` to `1` (left/up to right/down); the defaults are shown above. An activity's direction wins over its mood's. Set a mood to `null` to make it follow the pointer too, or an activity to `null` to look where its mood does. With **Eyes follow the mouse pointer** off, the eyes look straight ahead except in the moods with a fixed direction.
 
 ### Movement settings
 
@@ -273,11 +312,12 @@ People can choose how much the buddy moves in **Settings → Look → Movement**
 
 - **Still** (`motion-off`): every animation and transition is stopped for you. If a part only shows up through an animation (say, it fades in), give it a visible style for `.motion-off`.
 - **Calm** (`motion-reduced`): yours to handle. Stop big movements like hopping, bobbing and jumping, and keep small ones like breathing and blinking: `.motion-reduced .wrap { animation: none !important; }`.
+- Quirks don't happen at all when the movement is set to Still.
 - The system's *reduce motion* setting shortens every animation to a single, instant run.
 
 ## Testing your character
 
-- **Preview** in **Settings → Look → Character** shows any mood or tool on the buddy, or all of them in turn, while Settings is open.
+- **Preview** in **Settings → Look → Character** shows any mood, tool, activity or quirk on the buddy, or all of them in turn, while Settings is open. Activities and quirks in the preview show even when they're turned off.
 - **Every save reloads the character.** If a file has a mistake, Settings shows what and where, and the last version that worked stays on screen.
 - **Things that were left out** (an image that wasn't found, a link that isn't allowed) are listed in Settings too.
 - Running from source, `npm run demo` walks through every mood with made-up data, and `npx electron . --demo=done --snapshot=done.png --exit` saves a picture of one. Changes to the built-in characters in `src/characters` reload as you save.
@@ -303,5 +343,6 @@ Characters can't do anything except draw: there's no JavaScript, and they can't 
 | Part of the drawing is cut off | It's outside the `viewBox`, or a jump or wave takes it there |
 | A shape spins or scales around the wrong point | Set `transform-origin` on it, or `transform-box: view-box` to use SVG coordinates (see [Drawing tips](#drawing-tips)) |
 | An animation doesn't play | Movement may be set to Still. An animation that runs a set number of times plays only when its rule starts to apply: tie one-shot animations to `.enter` (`.mood-done.enter .body`) so they replay on every mood change |
+| An activity shows the working look instead of mine | A mood rule wins over it: start the activity's rules with `.char` (`.char.do-reading .arm`) and put them after the mood rules. Or the activity is turned off in **Settings → Look → Activities** |
 | The colour swatches are greyed out | The pack has `"colorable": false` (picture packs have it by default) |
 | The tray icon didn't change | The tray icon is always the built-in buddy |

@@ -127,6 +127,56 @@ test('store: permission request becomes a decision and clears after the tool run
   assert.equal(store.snapshot().focus.status, 'sleeping');
 });
 
+test('store: what Claude did last this turn, for the buddy to act out', () => {
+  let now = T0;
+  const store = new Store({ settings: fakeSettings(), now: () => now });
+  const base = { session_id: 's1', transcript_path: '/tmp/s1.jsonl', cwd: '/work/myproj' };
+  const flow = () => store.snapshot().focus.flow;
+  const entry = (s, content, extra = {}) => ({ type: 'assistant', timestamp: at(s), message: { id: `m${s}`, model: 'claude-opus-5-5', content, ...extra } });
+
+  store.onHook({ ...base, hook_event_name: 'UserPromptSubmit', prompt: 'go' });
+  assert.deepEqual(flow(), { tool: null, toolAt: 0, writingAt: 0 });
+
+  // Thinking lands in the transcript: Claude has moved on to writing.
+  store.onTranscriptEntries('s1', [entry(2, [{ type: 'thinking', thinking: '' }])]);
+  assert.equal(flow().writingAt, T0 + 2000);
+
+  // The tool call stops the writing; its end is when it last ran.
+  now = T0 + 3000;
+  store.onHook({ ...base, hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: '/work/myproj/a.js' } });
+  assert.deepEqual(flow(), { tool: 'edit', toolAt: T0 + 3000, writingAt: 0 });
+  now = T0 + 4000;
+  store.onHook({ ...base, hook_event_name: 'PostToolUse', tool_name: 'Edit' });
+  assert.deepEqual(flow(), { tool: 'edit', toolAt: T0 + 4000, writingAt: 0 });
+  // A late transcript line from before the tool ended changes nothing.
+  store.onTranscriptEntries('s1', [entry(3.5, [{ type: 'text', text: 'Fixing it.' }])]);
+  assert.equal(flow().writingAt, 0);
+
+  store.onTranscriptEntries('s1', [entry(6, [{ type: 'thinking', thinking: '' }])]);
+  assert.deepEqual(flow(), { tool: 'edit', toolAt: T0 + 4000, writingAt: T0 + 6000 });
+  // Crew views carry it too.
+  assert.deepEqual(store.snapshot().sessions[0].flow, flow());
+
+  now = T0 + 9000;
+  store.onHook({ ...base, hook_event_name: 'Stop', last_assistant_message: 'Done.' });
+  assert.equal(flow().writingAt, 0);
+  store.onHook({ ...base, hook_event_name: 'UserPromptSubmit', prompt: 'again' });
+  assert.deepEqual(flow(), { tool: null, toolAt: 0, writingAt: 0 });
+});
+
+test('transcript reducer keeps the flow without hooks', () => {
+  const ts = newTranscriptState();
+  reduceEntry(ts, { type: 'user', timestamp: at(0), message: { role: 'user', content: 'Look around' } });
+  reduceEntry(ts, { type: 'assistant', timestamp: at(1), message: { id: 'm1', content: [{ type: 'tool_use', id: 'tu1', name: 'Grep', input: { pattern: 'x' } }] } });
+  assert.deepEqual(ts.flow, { tool: 'search', toolAt: T0 + 1000, writingAt: 0 });
+  reduceEntry(ts, { type: 'user', timestamp: at(2), message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'tu1', content: 'ok' }] } });
+  assert.deepEqual(ts.flow, { tool: 'search', toolAt: T0 + 2000, writingAt: 0 });
+  reduceEntry(ts, { type: 'assistant', timestamp: at(5), message: { id: 'm2', content: [{ type: 'text', text: 'Found it.' }] } });
+  assert.equal(ts.flow.writingAt, T0 + 5000);
+  reduceEntry(ts, { type: 'assistant', timestamp: at(6), message: { id: 'm2', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Bye.' }] } });
+  assert.equal(ts.flow.writingAt, 0);
+});
+
 test('store: a waiting session takes focus over a busier one', () => {
   let now = T0;
   const store = new Store({ settings: fakeSettings(), now: () => now });
