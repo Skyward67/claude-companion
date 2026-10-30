@@ -6,7 +6,7 @@
 const path = require('path');
 const { EventEmitter } = require('events');
 const { newTranscriptState, reduceEntry, sourceOf, newHelperState, reduceHelperEntry } = require('./transcripts');
-const { describeTool, permissionLine, firstSentence, pick, errorLine, trunc } = require('./describe');
+const { describeTool, permissionLine, firstSentence, pick, errorLine, trunc, base } = require('./describe');
 const { contextLimitFor, prettyModel } = require('./pricing');
 
 const QUESTION_MS = 2 * 60 * 60 * 1000;
@@ -445,9 +445,11 @@ class Store extends EventEmitter {
     return s.ts.projectDir || s.cwd || s.ts.cwd || '';
   }
 
+  // Split on either separator: path.basename on macOS/Linux leaves a
+  // Windows-style cwd (D:\Dev\app) whole.
   projectOf(s) {
-    const dir = this.projectDirOf(s);
-    return dir ? path.basename(dir) : s.id.slice(0, 8);
+    const dir = this.projectDirOf(s).replace(/[\\/]+$/, '');
+    return (dir && base(dir)) || s.id.slice(0, 8);
   }
 
   sourceOf(s) {
