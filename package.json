@@ -29,8 +29,8 @@
     "icon": "electron scripts/render-assets.js icon"
   },
   "devDependencies": {
-    "electron": "44.7.0",
-    "electron-builder": "26.17.0"
+    "electron": "45.0.0",
+    "electron-builder": "26.18.0"
   },
   "build": {
     "appId": "dev.claude-companion",
