@@ -59,7 +59,7 @@ function handle(msg) {
         result: {
           protocolVersion: SUPPORTED.includes(requested) ? requested : SUPPORTED[0],
           capabilities: { experimental: { 'claude/channel': {}, 'claude/channel/permission': {} }, tools: {} },
-          serverInfo: { name: 'claude-companion', version: '0.1.0' },
+          serverInfo: { name: 'claude-companion', version: '0.1.1' },
           instructions: INSTRUCTIONS,
         },
       });

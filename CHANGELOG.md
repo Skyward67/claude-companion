@@ -2,6 +2,10 @@
 
 All notable changes are listed here. This project follows [Semantic Versioning](https://semver.org).
 
+## 0.1.1
+
+- Fixed project names for sessions started in a Windows-style folder (`D:\Dev\app`) when the buddy runs on macOS or Linux. This also fixes the test failure that stopped the 0.1.0 installers from being built.
+
 ## 0.1.0
 
 First public release.
