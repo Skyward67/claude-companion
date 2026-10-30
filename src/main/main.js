@@ -14,6 +14,9 @@ const { updateDisplay, presetList, DISPLAY_DEFAULTS } = require('./display');
 const { Decisions } = require('./decisions');
 const { Channels } = require('./channels');
 const { BuddyChats, findClaudeExecutable } = require('./buddyChats');
+const characters = require('./characters');
+
+const CHARACTER_GUIDE = 'https://github.com/Skyward67/claude-companion/blob/main/docs/characters.md';
 
 const argv = process.argv.slice(1);
 const flag = (name) => {
@@ -43,10 +46,16 @@ let serverError = null;
 let setup = { hooks: { installed: false }, statusLine: { installed: false } };
 let trayMood = null;
 let quitting = false;
+let character = null; // the pack the widget shows (characters.js)
+let characterStatus = null; // { id, ok, error, warnings } for the chosen pack, shown in Settings
+let charactersRev = 0; // bumped when pack files change, so Settings refreshes its list
+let stopWatchingCharacters = () => {};
+let preview = null; // a mood Settings shows on the buddy instead of the live one
 
 // Keep settings in the same folder whether run from source or installed
 // (Electron would otherwise name it after productName in packaged builds).
-app.setPath('userData', path.join(app.getPath('appData'), 'claude-companion'));
+// `--user-data=<dir>` runs with a separate folder, e.g. to try things out.
+app.setPath('userData', typeof flag('user-data') === 'string' ? path.resolve(flag('user-data')) : path.join(app.getPath('appData'), 'claude-companion'));
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -82,6 +91,15 @@ async function boot() {
   buddyChats = new BuddyChats({ settings, findClaude, settingsFile: writeBuddyChatSettings });
   buddyChats.on('change', () => (store.dirty = true));
   store.isOwned = (id) => buddyChats.owns(id);
+
+  try {
+    fs.mkdirSync(charactersDir(), { recursive: true });
+  } catch (err) {
+    console.error('Could not create the characters folder:', err.message);
+  }
+  loadCharacter();
+  // Built-in packs are only edited when running from source.
+  stopWatchingCharacters = characters.watchCharacters([charactersDir(), ...(app.isPackaged ? [] : [characters.BUILT_IN_DIR])], onCharacterFiles);
 
   watcher = new TranscriptWatcher(path.join(claudeConfig.claudeDir(), 'projects'));
   watcher.on('entries', (id, entries, meta) => store.onTranscriptEntries(id, entries, meta));
@@ -286,6 +304,61 @@ function refreshSetup() {
   };
 }
 
+// ---- character packs ----------------------------------------------------------
+
+function charactersDir() {
+  return path.join(app.getPath('userData'), 'characters');
+}
+
+function selectedCharacter() {
+  return settings.get('display').character;
+}
+
+// Loads the chosen pack and sends it to the widget. While a pack is broken
+// (say, mid-edit) the last good version of it stays up; a pack that never
+// loaded falls back to the buddy. Either way Settings shows the error.
+function loadCharacter() {
+  const id = selectedCharacter();
+  try {
+    character = characters.loadCharacter(id, charactersDir());
+    characterStatus = { id, ok: true, warnings: character.warnings };
+  } catch (err) {
+    const fallback = !character || character.id !== id;
+    characterStatus = { id, ok: false, error: err.message, warnings: [], fallback };
+    if (fallback) {
+      try {
+        character = characters.loadCharacter(characters.DEFAULT_ID, charactersDir());
+      } catch (e) {
+        console.error('Could not load the built-in character:', e.message);
+      }
+    }
+  }
+  if (alive(win) && character) win.webContents.send('character', character);
+  push();
+}
+
+function selectCharacter(id) {
+  settings.set({ display: updateDisplay(settings.get('display'), { character: id }) });
+  loadCharacter();
+}
+
+function onCharacterFiles(ids) {
+  charactersRev++;
+  if (ids.has(selectedCharacter()) || ids.has('')) loadCharacter();
+  else push();
+}
+
+function characterList() {
+  return { list: characters.listCharacters(charactersDir()), selected: selectedCharacter(), folder: charactersDir(), status: characterStatus };
+}
+
+// Neither window ever navigates or opens another: a stray link (in a
+// character's art, say) must not load a page that would get the preload API.
+function lockNavigation(w) {
+  w.webContents.on('will-navigate', (e) => e.preventDefault());
+  w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+}
+
 // ---- widget window ----------------------------------------------------------
 
 function widgetSize() {
@@ -396,6 +469,7 @@ function createWidget() {
     },
   });
   applyAlwaysOnTop();
+  lockNavigation(win);
   win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'), { query: { demo: DEMO ? String(DEMO) : '' } });
   win.webContents.on('did-finish-load', () => {
@@ -456,6 +530,7 @@ function push() {
   snap.display = settings.get('display');
   snap.buddyName = settings.get('buddyName');
   snap.chatOpen = chatOpen;
+  snap.preview = preview;
   if (snap.focus) {
     const s = store.sessions.get(snap.focus.id);
     snap.focus.actions = decisions.viewsFor(snap.focus.id);
@@ -466,7 +541,9 @@ function push() {
   for (const v of snap.sessions) v.actionable = decisions.forSession(v.id).length;
   win.webContents.send('state', snap);
   updateTray(snap);
-  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('state', { setup, usage: snap.usage, credits: snap.credits, display: snap.display });
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    settingsWin.webContents.send('state', { setup, usage: snap.usage, credits: snap.credits, display: snap.display, characters: { rev: charactersRev, status: characterStatus } });
+  }
 }
 
 let lastCursor = '';
@@ -795,8 +872,15 @@ function openSettings(tab) {
       sandbox: true,
     },
   });
+  lockNavigation(settingsWin);
   settingsWin.loadFile(path.join(__dirname, '..', 'settings', 'settings.html'), { query: { tab } });
   settingsWin.webContents.on('did-finish-load', () => push());
+  // A preview only lasts while you're looking at it in Settings.
+  settingsWin.on('closed', () => {
+    if (!preview) return;
+    preview = null;
+    push();
+  });
 }
 
 function openChat(fresh) {
@@ -833,12 +917,62 @@ ipcMain.handle('settings:set', (_e, patch) => {
   if (patch && typeof patch.buddyName === 'string') clean.buddyName = patch.buddyName.trim().slice(0, 24);
   if (patch && patch.claudePath === '') clean.claudePath = '';
   if (patch && patch.display) clean.display = patch.display === 'reset' ? updateDisplay({}, {}) : updateDisplay(settings.get('display'), patch.display);
+  const before = selectedCharacter();
   settings.set(clean);
   if ('alwaysOnTop' in clean) applyAlwaysOnTop();
   if ('scale' in clean) applyScale();
+  if (selectedCharacter() !== before) loadCharacter();
   store.dirty = true;
   push();
   return settings.all();
+});
+
+ipcMain.handle('character:get', (_e, opts) => {
+  if (!(opts && opts.fallback)) return character;
+  try {
+    return characters.loadCharacter(characters.DEFAULT_ID, charactersDir());
+  } catch {
+    return null;
+  }
+});
+// The widget's verdict after parsing the pack (SVG errors show up only there).
+ipcMain.on('character:status', (_e, r) => {
+  if (!r || r.id !== selectedCharacter()) return;
+  characterStatus = { id: r.id, ok: !!r.ok, error: String(r.error || ''), warnings: Array.isArray(r.warnings) ? r.warnings.map(String).slice(0, 20) : [], fallback: r.showing !== r.id };
+  push();
+});
+ipcMain.handle('characters:list', () => characterList());
+ipcMain.handle('characters:copy', (_e, id) => {
+  try {
+    const copy = characters.copyCharacter(id, charactersDir());
+    selectCharacter(copy);
+    shell.openPath(path.join(charactersDir(), copy));
+    return { ok: true, id: copy, ...characterList() };
+  } catch (err) {
+    return { ok: false, error: err.message, ...characterList() };
+  }
+});
+ipcMain.handle('characters:import', async () => {
+  const r = await dialog.showOpenDialog(settingsWin || win, { title: 'Character folder (with a character.json)', properties: ['openDirectory'] });
+  if (r.canceled) return { ok: false, ...characterList() };
+  try {
+    selectCharacter(characters.importCharacter(r.filePaths[0], charactersDir()));
+    return { ok: true, ...characterList() };
+  } catch (err) {
+    return { ok: false, error: err.message, ...characterList() };
+  }
+});
+// Your pack's own folder, or the folder that holds them all.
+ipcMain.handle('characters:open', (_e, id) => {
+  const own = characters.validId(id) && path.join(charactersDir(), id);
+  const dir = own && fs.existsSync(own) ? own : charactersDir();
+  fs.mkdirSync(dir, { recursive: true });
+  return shell.openPath(dir);
+});
+ipcMain.on('open:character-guide', () => shell.openExternal(CHARACTER_GUIDE));
+ipcMain.on('preview:set', (_e, scene) => {
+  preview = typeof scene === 'string' && /^[a-z]+(:[a-z]+)?$/.test(scene) ? scene : null;
+  push();
 });
 ipcMain.handle('login:set', (_e, on) => {
   app.setLoginItemSettings({ openAtLogin: !!on });
@@ -888,6 +1022,7 @@ ipcMain.handle('displays:move', (_e, id) => {
 app.on('before-quit', () => {
   quitting = true;
   stopTimers();
+  stopWatchingCharacters();
   // Let held prompts fall back to Claude's own UI, and end buddy chats.
   if (decisions) decisions.closeAll();
   if (channels) channels.closeAll();

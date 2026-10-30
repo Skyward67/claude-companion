@@ -1,0 +1,519 @@
+/* Blip, a starter character. Make an editable copy of it (Settings → Look →
+   Make an editable copy) and change anything: this is ordinary CSS.
+
+   The app adds these classes to the <svg>:
+     mood-*    idle | thinking | working | waiting | done | error | sleeping | compacting | pet
+     act-*     read | search | edit | run | web | agent | plan | tool | ask
+               (the tool Claude is using; only while working or waiting)
+     enter     re-added on every mood change: use it for one-shot animations
+     busy      working for more than 90 seconds
+     motion-*  full | reduced | off (Settings → Look → Movement; "off" stops
+               every animation by itself)
+     v-*       main | mate | helper: the big buddy, another session, a subagent
+
+   `.char * { transform-box: fill-box }` is already on, so transform-origin
+   is relative to each shape's own box ("center" is its middle). */
+
+/* ---------- parts ---------- */
+
+.shadow {
+  fill: rgba(0, 0, 0, 0.22);
+  transform-origin: center;
+}
+/* Squash and stretch from the feet. */
+.wrap,
+.body {
+  transform-origin: 50% 100%;
+}
+.shell {
+  fill: url(#shellGrad);
+  stroke: var(--body-line);
+  stroke-width: 3;
+}
+.screen {
+  fill: #1d2230;
+  stroke: var(--body-lo);
+  stroke-width: 2.5;
+  transition: fill 0.4s;
+}
+.foot,
+.arm rect {
+  fill: var(--body-lo);
+  stroke: var(--body-line);
+  stroke-width: 2.5;
+}
+/* Arms swing from the shoulder. */
+.arm {
+  transform-origin: 50% 12%;
+  transition: transform 0.3s ease;
+}
+.antenna {
+  transform-origin: 50% 100%;
+  transition: transform 0.4s ease;
+}
+.antenna-stem {
+  stroke: var(--body-line);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.antenna-tip {
+  fill: #ffd166;
+  stroke: var(--body-line);
+  stroke-width: 2;
+  transform-origin: center;
+  transition: fill 0.4s;
+}
+
+/* Face: glowing lines on the screen. */
+.eye,
+.m-o {
+  fill: #7cf0ff;
+}
+.eyes {
+  transform-origin: center;
+  animation: blink 4.5s infinite;
+}
+.look {
+  transition: transform 0.2s ease-out;
+}
+.eyes-alt,
+.mouth {
+  display: none;
+  fill: none;
+  stroke: #7cf0ff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.m-o {
+  stroke: none;
+}
+/* The default face: open eyes and a smile. Moods swap parts below. */
+.m-smile {
+  display: inline;
+}
+
+.prop {
+  display: none;
+  font: 22px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+  text-anchor: middle;
+  transform-origin: center;
+}
+
+/* Effects are hidden until a mood shows one. */
+.fx {
+  display: none;
+}
+.fx-thought circle {
+  fill: #f6ece5;
+  stroke: #c9b5a8;
+  stroke-width: 1.4;
+  animation: pop 1.8s ease-in-out infinite;
+}
+.fx-thought circle:nth-child(2) {
+  animation-delay: 0.25s;
+}
+.fx-thought circle:nth-child(3) {
+  animation-delay: 0.5s;
+}
+.fx-alert circle:first-child {
+  fill: #f5a623;
+  stroke: #b7770b;
+  stroke-width: 1.6;
+}
+.fx-alert path {
+  stroke: #fff;
+  stroke-width: 3.4;
+  stroke-linecap: round;
+}
+.fx-alert .dot {
+  fill: #fff;
+}
+.fx-alert {
+  transform-origin: center;
+  animation: throb 1s ease-in-out infinite;
+}
+.fx-sparkles text {
+  font: 16px 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+  transform-origin: center;
+  animation: pop 1.4s ease-in-out infinite;
+}
+.fx-sparkles text + text {
+  animation-delay: 0.5s;
+}
+.fx-zzz text {
+  fill: #cfe0ff;
+  stroke: #5f6f8f;
+  stroke-width: 0.6;
+  font: 800 14px 'Segoe UI', sans-serif;
+  animation: drift 3s ease-in-out infinite;
+}
+.fx-zzz text:nth-child(2) {
+  font-size: 11px;
+  animation-delay: 0.8s;
+}
+.fx-zzz text:nth-child(3) {
+  font-size: 9px;
+  animation-delay: 1.6s;
+}
+.fx-hearts text {
+  fill: #ff7a9a;
+  font: 18px 'Segoe UI Symbol', sans-serif;
+  animation: drift 1.4s ease-out infinite;
+}
+.fx-hearts text + text {
+  animation-delay: 0.45s;
+}
+.fx-sweat {
+  fill: #a8dcff;
+  stroke: #5aa7d8;
+  stroke-width: 1.2;
+  animation: drip 2.2s ease-in infinite;
+}
+
+/* ---------- moods ---------- */
+
+/* Idle: breathing, and a slow glow on the antenna. */
+.mood-idle .body {
+  animation: breathe 3.2s ease-in-out infinite;
+}
+.mood-idle .antenna-tip {
+  animation: glow 3.2s ease-in-out infinite;
+}
+
+/* Thinking: tilts its head, a thought bubble, a hand on its chin. */
+.mood-thinking .body {
+  animation: tilt 2.4s ease-in-out infinite;
+}
+.mood-thinking .fx-thought {
+  display: inline;
+}
+.mood-thinking .m-smile {
+  display: none;
+}
+.mood-thinking .m-flat {
+  display: inline;
+}
+.mood-thinking .arm-r {
+  transform: rotate(-40deg);
+}
+
+/* Working: bobs, taps away, the antenna blinks fast. */
+.mood-working .wrap {
+  animation: bob 0.5s ease-in-out infinite;
+}
+.mood-working .arm-l {
+  animation: tap 0.3s ease-in-out infinite alternate;
+}
+.mood-working .arm-r {
+  animation: tap 0.36s ease-in-out infinite alternate-reverse;
+}
+.mood-working .m-smile {
+  display: none;
+}
+.mood-working .m-flat {
+  display: inline;
+}
+.mood-working .antenna-tip {
+  animation: glow 0.6s steps(2) infinite;
+}
+/* A drop of sweat after 90 seconds of work. */
+.mood-working.busy .fx-sweat {
+  display: inline;
+}
+
+/* The prop for the current tool. */
+.act-read .p-read,
+.act-search .p-search,
+.act-edit .p-edit,
+.act-run .p-run,
+.act-web .p-web,
+.act-agent .p-agent,
+.act-plan .p-plan,
+.act-ask .p-ask,
+.act-tool .p-tool {
+  display: inline;
+  animation: wobble 1s ease-in-out infinite;
+}
+
+/* Needs you: hops, waves, an alert badge, wide eyes. */
+.mood-waiting .wrap {
+  animation: hop 1.1s ease-in-out infinite;
+}
+.mood-waiting .shadow {
+  animation: shadow-hop 1.1s ease-in-out infinite;
+}
+.mood-waiting .arm-l {
+  animation: wave 0.45s ease-in-out infinite alternate;
+}
+.mood-waiting .eye {
+  transform: scale(1.15);
+  transform-origin: center;
+}
+.mood-waiting .m-smile {
+  display: none;
+}
+.mood-waiting .m-o,
+.mood-waiting .fx-alert {
+  display: inline;
+}
+
+/* Done: jumps twice when it gets there (.enter), arms up, sparkles. */
+.mood-done .body {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+.mood-done.enter .wrap {
+  animation: jump 0.6s ease-out 2;
+}
+.mood-done .arm-l {
+  transform: rotate(150deg);
+}
+.mood-done .arm-r {
+  transform: rotate(-150deg);
+}
+.mood-done .eyes {
+  display: none;
+}
+.mood-done .eyes-happy,
+.mood-done .fx-sparkles {
+  display: inline;
+}
+
+/* Error: shakes once, dizzy eyes, a red screen, a drooping antenna. */
+.mood-error.enter .wrap {
+  animation: shake 0.45s ease-in-out 2;
+}
+.mood-error .eyes,
+.mood-error .m-smile {
+  display: none;
+}
+.mood-error .eyes-dizzy,
+.mood-error .m-flat {
+  display: inline;
+  stroke: #ff8a80;
+}
+.mood-error .screen {
+  fill: #3a1d22;
+}
+.mood-error .antenna {
+  transform: rotate(25deg);
+}
+.mood-error .antenna-tip {
+  fill: #9aa0a6;
+}
+
+/* Asleep: eyes shut, a dim screen, Zzz. */
+.mood-sleeping .body {
+  animation: breathe 4.6s ease-in-out infinite;
+}
+.mood-sleeping .eyes,
+.mood-sleeping .m-smile {
+  display: none;
+}
+.mood-sleeping .eyes-closed,
+.mood-sleeping .fx-zzz {
+  display: inline;
+}
+.mood-sleeping .screen {
+  fill: #12151d;
+}
+.mood-sleeping .antenna {
+  transform: rotate(-20deg);
+}
+.mood-sleeping .antenna-tip {
+  fill: #6b7280;
+}
+
+/* Compacting (Claude is summarising its memory): squashes itself small. */
+.mood-compacting .body {
+  animation: squish 0.8s ease-in-out infinite;
+}
+.mood-compacting .eyes,
+.mood-compacting .m-smile {
+  display: none;
+}
+.mood-compacting .eyes-closed,
+.mood-compacting .m-flat {
+  display: inline;
+}
+
+/* Petted (you clicked it): wiggles, happy eyes, hearts. */
+.mood-pet .wrap {
+  animation: wiggle 0.32s ease-in-out 3;
+}
+.mood-pet .eyes {
+  display: none;
+}
+.mood-pet .eyes-happy,
+.mood-pet .fx-hearts {
+  display: inline;
+}
+
+/* ---------- sizes and settings ---------- */
+
+/* The tiny helper clones (subagents) are too small for effects. */
+.v-helper .fx {
+  display: none !important;
+}
+
+/* Movement: Calm. No hopping or bobbing; breathing and blinking stay. */
+.motion-reduced .wrap,
+.motion-reduced .shadow {
+  animation: none !important;
+}
+
+/* ---------- keyframes ---------- */
+
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(0.99, 1.03);
+  }
+}
+@keyframes glow {
+  50% {
+    fill: #fff3c4;
+  }
+}
+@keyframes tilt {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+@keyframes bob {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes tap {
+  from {
+    transform: rotate(-8deg);
+  }
+  to {
+    transform: rotate(14deg);
+  }
+}
+@keyframes wobble {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(8deg) translateY(-2px);
+  }
+}
+@keyframes hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1.04, 0.96);
+  }
+  45% {
+    transform: translateY(-12px) scale(0.98, 1.03);
+  }
+  75% {
+    transform: translateY(0);
+  }
+}
+@keyframes shadow-hop {
+  45% {
+    transform: scale(0.75);
+    opacity: 0.6;
+  }
+}
+@keyframes wave {
+  from {
+    transform: rotate(120deg);
+  }
+  to {
+    transform: rotate(160deg);
+  }
+}
+@keyframes jump {
+  40% {
+    transform: translateY(-20px) scale(0.96, 1.05);
+  }
+  80% {
+    transform: translateY(0) scale(1.04, 0.96);
+  }
+}
+@keyframes shake {
+  25% {
+    transform: translateX(-5px) rotate(-3deg);
+  }
+  75% {
+    transform: translateX(5px) rotate(3deg);
+  }
+}
+@keyframes squish {
+  50% {
+    transform: scale(1.1, 0.86);
+  }
+}
+@keyframes wiggle {
+  25% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+@keyframes pop {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  40%,
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes throb {
+  50% {
+    transform: scale(1.15) rotate(6deg);
+  }
+}
+@keyframes drift {
+  0% {
+    opacity: 0;
+    transform: translate(0, 6px) scale(0.7);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(6px, -12px) scale(1.1);
+  }
+}
+@keyframes drip {
+  0% {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Buddy",
+  "author": "Claude Companion",
+  "description": "A terracotta bean with a sparkle sprout. Holds a prop for every tool.",
+  "version": "1.0.0",
+  "svg": "character.svg",
+  "css": "character.css",
+  "colorable": true
+}

@@ -1,0 +1,35 @@
+/* Ghost is drawn by its sprite sheets (see "poses" in character.json). This
+   optional CSS adds movement on top: the app wraps the pictures in
+   <g class="wrap"><g class="body">…</g></g>, and each picture has the class
+   pose and pose-<name>. Sizes here are in sprite pixels (32 × 32). */
+
+/* Float gently while idle or asleep. */
+.mood-idle .wrap,
+.mood-sleeping .wrap {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Wobble once on arriving at an error (.enter is re-added on every mood change). */
+.mood-error.enter .wrap {
+  transform-origin: 50% 100%;
+  animation: wobble 0.4s ease-in-out 2;
+}
+
+/* Movement: Calm keeps the frames but stops the floating. */
+.motion-reduced .wrap {
+  animation: none !important;
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-1px);
+  }
+}
+@keyframes wobble {
+  25% {
+    transform: rotate(-4deg);
+  }
+  75% {
+    transform: rotate(4deg);
+  }
+}

@@ -6,6 +6,7 @@ const { app, BrowserWindow } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const characters = require('../src/main/characters');
 
 const root = path.join(__dirname, '..');
 const [mode, ...files] = process.argv.slice(process.argv.findIndex((a) => a.endsWith('render-assets.js')) + 1);
@@ -24,11 +25,14 @@ async function capture(html, width, height, transparent) {
 function iconHtml() {
   const css = pathToFileURL(path.join(root, 'src', 'renderer', 'style.css')).href;
   const js = pathToFileURL(path.join(root, 'src', 'renderer', 'character.js')).href;
+  // The built-in buddy, as the widget gets it (`<` escaped for the script tag).
+  const pack = JSON.stringify(characters.loadCharacter(characters.DEFAULT_ID, app.getPath('temp'))).replace(/</g, '\\u003c');
   return `<!doctype html><html><head><link rel="stylesheet" href="${css}">
   <style>html,body{margin:0;width:1024px;height:1024px;background:transparent;overflow:hidden}
-  #host,#host svg{width:1024px;height:1024px;display:block}
-  .char *{animation:none!important;transition:none!important}</style></head>
+  #host{width:1024px;height:1024px;display:block}</style></head>
   <body><div id="host"></div><script src="${js}"></script><script>
+    setCharacterMotion('off');
+    setCharacter(${pack});
     const c = new Character(document.getElementById('host'));
     // Crop to the character so it fills the icon.
     c.svg.setAttribute('viewBox', '17 19 126 132');
