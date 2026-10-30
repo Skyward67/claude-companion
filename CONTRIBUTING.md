@@ -27,6 +27,7 @@ You need Node.js 22 or later. Claude Code is optional, but you'll want it to see
 | `--settings[=<tab>]` | Open the Settings window at start |
 | `--snapshot=<file.png> [--snapshot-delay=ms] [--exit]` | Save a picture of the widget (or of Settings, with `--settings`) and quit. Handy for checking UI changes and for screenshots |
 | `--screen=<n>` | Sent to a running instance: moves the buddy to screen n |
+| `--user-data=<dir>` | Use a separate settings and characters folder, e.g. to try things without touching your own (it also runs alongside your usual buddy) |
 
 `npm run pack` builds an unpacked app in `dist/`, and `npm run dist` builds installers for your platform.
 
@@ -43,11 +44,14 @@ src/main/        Electron main process (CommonJS)
   buddyChats.js    headless Claude Code sessions run by the buddy
   claudeConfig.js  installs/removes hooks and the status line in ~/.claude/settings.json
   display.js       display presets and validation of every display setting
+  characters.js    character packs: listing, loading, copying, watching for edits
   describe.js      tool call → friendly sentence
   pricing.js       model prices, cost estimate, context sizes
   settings.js, trayIcon.js
+src/characters/  built-in character packs: buddy (the default), blip, ghost
+                   (see docs/characters.md)
 src/renderer/    the widget: plain scripts, no bundler
-  character.js     the buddy's SVG and colours (animation lives in style.css)
+  character.js     draws a character pack in a shadow root, sanitising its SVG; colours
   app.js           cards, bubbles, crew, popovers
   chat.js          chat panel
   demo.js          made-up data for demo mode

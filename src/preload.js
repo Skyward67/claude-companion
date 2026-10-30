@@ -26,6 +26,17 @@ contextBridge.exposeInMainWorld('companion', {
   openSettings: (tab) => ipcRenderer.send('open:settings', tab),
   onTab: (fn) => ipcRenderer.on('tab', (_e, tab) => fn(tab)),
 
+  // Character packs
+  getCharacter: (opts) => ipcRenderer.invoke('character:get', opts),
+  onCharacter: (fn) => ipcRenderer.on('character', (_e, c) => fn(c)),
+  characterStatus: (status) => ipcRenderer.send('character:status', status),
+  listCharacters: () => ipcRenderer.invoke('characters:list'),
+  copyCharacter: (id) => ipcRenderer.invoke('characters:copy', id),
+  importCharacter: () => ipcRenderer.invoke('characters:import'),
+  openCharacterFolder: (id) => ipcRenderer.invoke('characters:open', id),
+  openCharacterGuide: () => ipcRenderer.send('open:character-guide'),
+  setPreview: (scene) => ipcRenderer.send('preview:set', scene),
+
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (patch) => ipcRenderer.invoke('settings:set', patch),
   setLogin: (on) => ipcRenderer.invoke('login:set', on),

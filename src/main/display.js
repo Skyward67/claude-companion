@@ -3,6 +3,8 @@
 // What the widget shows and how it looks. The main process validates every
 // change here; the renderer receives the result as-is.
 
+const { validId } = require('./characters');
+
 const DISPLAY_DEFAULTS = {
   preset: 'standard',
   // What's shown
@@ -19,6 +21,7 @@ const DISPLAY_DEFAULTS = {
   bubbleLevel: 'all', // all | important | decisions | off
   bubbleSeconds: 6,
   // Look
+  character: 'buddy', // a character pack's folder name (see characters.js)
   bodyColor: '#e07b56',
   theme: 'dark', // dark | light
   cardOpacity: 0.9,
@@ -71,6 +74,7 @@ function cleanValue(key, value) {
     return Math.min(hi, Math.max(lo, key === 'cardOpacity' ? Math.round(n * 100) / 100 : Math.round(n)));
   }
   if (key === 'bodyColor') return /^#[0-9a-f]{6}$/i.test(String(value)) ? String(value).toLowerCase() : undefined;
+  if (key === 'character') return validId(value) ? value : undefined;
   if (key === 'hiddenProjects') {
     const list = Array.isArray(value) ? value : String(value || '').split(',');
     return [...new Set(list.map((s) => String(s).trim()).filter(Boolean))].slice(0, 50);

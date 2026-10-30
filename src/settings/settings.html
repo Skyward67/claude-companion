@@ -94,13 +94,60 @@
     <!-- ===================== Look ===================== -->
     <div class="panel" data-panel="look">
       <section>
+        <h2>Character</h2>
+        <div class="characters" id="characters"></div>
+        <div class="char-status" id="char-status" hidden></div>
+        <div class="char-actions">
+          <button id="char-copy" class="primary" title="Copies the selected character into your characters folder and opens it">Make an editable copy</button>
+          <button id="char-import" title="Copy a character folder someone shared into your characters folder">Add from folder…</button>
+          <button id="char-folder">Open folder</button>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Preview</div>
+            <div class="desc">Shows a mood on the buddy while this window is open, to check a character’s animations.</div>
+          </div>
+          <select id="char-preview">
+            <option value="">Live (what Claude is doing)</option>
+            <option value="cycle">All moods in turn</option>
+            <optgroup label="Moods">
+              <option value="idle">Idle</option>
+              <option value="thinking">Thinking</option>
+              <option value="waiting:ask">Needs you</option>
+              <option value="done">Done</option>
+              <option value="error">Error</option>
+              <option value="compacting">Compacting</option>
+              <option value="sleeping">Asleep</option>
+              <option value="pet">Petted</option>
+            </optgroup>
+            <optgroup label="Working with…">
+              <option value="working">No tool</option>
+              <option value="working:read">Read</option>
+              <option value="working:search">Search</option>
+              <option value="working:edit">Edit</option>
+              <option value="working:run">Run</option>
+              <option value="working:web">Web</option>
+              <option value="working:agent">Helper (agent)</option>
+              <option value="working:plan">Plan</option>
+              <option value="working:tool">Other tool</option>
+              <option value="busy">Busy for a while</option>
+            </optgroup>
+          </select>
+        </div>
+        <p class="foot">Edit the files in your character’s folder and the buddy updates each time you save. <a href="#" id="char-guide">How to make a character</a></p>
+      </section>
+
+      <section>
         <h2>Your buddy</h2>
         <div class="row">
           <div class="label">Name</div>
           <input type="text" id="buddyName" maxlength="24" placeholder="Give it a name" />
         </div>
-        <div class="row">
-          <div class="label">Colour</div>
+        <div class="row" id="color-row">
+          <div>
+            <div class="label">Colour</div>
+            <div class="desc" id="color-note" hidden>This character brings its own colours.</div>
+          </div>
           <div class="swatches" id="swatches"></div>
         </div>
         <div class="row">

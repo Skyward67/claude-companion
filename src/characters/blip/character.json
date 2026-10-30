@@ -1,0 +1,12 @@
+{
+  "name": "Blip",
+  "author": "Claude Companion",
+  "description": "A small robot, and a simple, commented starting point for your own character.",
+  "version": "1.0.0",
+  "svg": "character.svg",
+  "css": "character.css",
+  "colorable": true,
+  "gaze": {
+    "reach": [4, 2.5]
+  }
+}

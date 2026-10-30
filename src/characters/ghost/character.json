@@ -1,0 +1,19 @@
+{
+  "name": "Ghost",
+  "author": "Claude Companion",
+  "description": "A pixel-art ghost drawn as sprite sheets: a starting point for characters made of pictures.",
+  "version": "1.0.0",
+  "size": [32, 32],
+  "pixelated": true,
+  "poses": {
+    "idle": { "file": "idle.png", "frames": 4, "fps": 4 },
+    "thinking": { "file": "thinking.png", "frames": 4, "fps": 3 },
+    "working": { "file": "working.png", "frames": 4, "fps": 8 },
+    "waiting": { "file": "waiting.png", "frames": 2, "fps": 4 },
+    "done": { "file": "done.png", "frames": 4, "fps": 6 },
+    "error": { "file": "error.png", "frames": 2, "fps": 8 },
+    "sleeping": { "file": "sleeping.png", "frames": 4, "fps": 2 },
+    "compacting": { "file": "compacting.png", "frames": 4, "fps": 6 },
+    "pet": { "file": "pet.png", "frames": 2, "fps": 6 }
+  }
+}

@@ -41,7 +41,48 @@ function applyLook(d) {
   document.documentElement.style.setProperty('--card-alpha', String(d.cardOpacity));
   document.body.classList.remove('motion-full', 'motion-reduced', 'motion-off');
   document.body.classList.add(`motion-${d.motion}`);
+  window.setCharacterMotion(d.motion);
   if (!d.eyesFollow) buddy.lookAt(0, 0);
+}
+
+// ---------- character pack ----------
+
+// The main process loads the chosen pack and sends it again whenever its
+// files change; the result goes back so Settings can show what went wrong.
+let shownCharacter = false;
+function showCharacter(data) {
+  const r = window.setCharacter(data);
+  if (api) api.characterStatus(r);
+  shownCharacter = shownCharacter || r.ok;
+  // A pack that's broken from the start would leave no buddy at all.
+  if (!shownCharacter && api) {
+    api.getCharacter({ fallback: true }).then((d) => {
+      shownCharacter = !!d && window.setCharacter(d).ok;
+    });
+  }
+}
+
+// Opened in a plain browser (no main process): load the built-in buddy's files.
+async function loadBuiltInCharacter() {
+  try {
+    const get = (f) => fetch(`../characters/buddy/${f}`).then((r) => r.text());
+    window.setCharacter({ id: 'buddy', svg: await get('character.svg'), css: await get('character.css') });
+  } catch {
+    // file:// pages can't fetch; serve the folder over http to see the buddy.
+  }
+}
+
+// Settings → Look → Preview: one mood (or all of them in turn) instead of
+// what Claude is doing, to check a character's animations.
+const PREVIEW_CYCLE = ['idle', 'thinking', 'working:read', 'working:search', 'working:edit', 'working:run', 'working:web', 'working:agent', 'working:plan', 'working:tool', 'busy', 'waiting:ask', 'done', 'error', 'compacting', 'sleeping', 'pet'];
+
+function previewOf(s) {
+  let p = s.preview;
+  if (!p) return null;
+  if (p === 'cycle') p = PREVIEW_CYCLE[Math.floor(Date.now() / 3000) % PREVIEW_CYCLE.length];
+  if (p === 'busy') return { mood: 'working', act: 'run', busy: true };
+  const [mood, act] = p.split(':');
+  return { mood, act: act || null, busy: false };
 }
 
 // ---------- formatting ----------
@@ -106,15 +147,17 @@ function render(s) {
   display = { ...DEFAULT_DISPLAY, ...(s.display || {}) };
   applyLook(display);
   const f = s.focus;
-  const mood = moodOf(s);
+  const preview = Date.now() < petUntil ? null : previewOf(s);
+  const mood = preview ? preview.mood : moodOf(s);
   const helpers = display.showHelpers ? (f && f.helpers) || [] : [];
   let act = f && f.decision ? 'ask' : f && f.activity ? f.activity.kind : null;
   // The clones at its feet already show the helpers.
   if (act === 'agent' && helpers.length) act = null;
+  if (preview) act = preview.act;
 
   if (mood === 'working') busySince = busySince || Date.now();
   else busySince = 0;
-  buddy.svg.classList.toggle('busy', !!busySince && Date.now() - busySince > 90000);
+  buddy.setBusy(preview ? preview.busy : !!busySince && Date.now() - busySince > 90000);
   buddy.setMood(mood, act);
 
   renderTokens(s);
@@ -171,9 +214,9 @@ function renderHelpers(list) {
     const host = document.createElement('div');
     host.className = 'helper';
     helpersEl.insertBefore(host, helpersEl.querySelector('.helpers-more'));
-    helperChars.push(new window.Character(host));
+    helperChars.push(new window.Character(host, 'helper'));
   }
-  while (helperChars.length > n) helperChars.pop().svg.parentElement.remove();
+  while (helperChars.length > n) helperChars.pop().host.remove();
   list.slice(0, n).forEach((h, i) => {
     const mood = h.status === 'done' ? 'done' : h.status === 'thinking' ? 'thinking' : 'working';
     helperChars[i].setMood(mood, h.activity ? h.activity.kind : null);
@@ -243,7 +286,7 @@ function createMate(id) {
   el.dataset.pop = 'mate';
   el.dataset.id = id;
   el.innerHTML = '<div class="mate-char"></div><div class="mate-label"><span class="src-dot"></span><span class="mate-name"></span></div><div class="mate-bar"><div class="mate-fill"></div></div>';
-  const character = new window.Character(el.querySelector('.mate-char'));
+  const character = new window.Character(el.querySelector('.mate-char'), 'mate');
   el.addEventListener('mouseenter', () => openPopFor(el));
   el.addEventListener('mouseleave', scheduleClosePop);
   el.addEventListener('click', () => api && api.follow(id));
@@ -686,6 +729,8 @@ const renderDemo = (s) => {
   if (s.demoChat && window.chatUI && !window.chatUI.isOpen()) window.chatUI.setOpen(true);
 };
 if (api) {
+  api.getCharacter().then(showCharacter);
+  api.onCharacter(showCharacter);
   if (!demo) api.onState(render);
   else {
     api.onState((s) => {
@@ -695,6 +740,8 @@ if (api) {
     });
   }
   api.onCursor(onCursor);
+} else {
+  loadBuiltInCharacter();
 }
 if (!api || demo) {
   window.startDemo(renderDemo, demo && demo !== '1' && demo !== 'true' ? demo : null);

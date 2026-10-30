@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" aria-label="Blip">
+  <!--
+    Blip, a starter character. Every part has a class that character.css
+    styles and animates; the app only adds classes to this <svg> element
+    (mood-*, act-*, enter, busy, motion-*, v-*). Keep the art inside the
+    160 × 160 viewBox: anything outside it is cut off.
+  -->
+  <defs>
+    <!-- Colours from Settings → Look → Colour, through CSS variables. -->
+    <linearGradient id="shellGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color: var(--body-hi)"/>
+      <stop offset="1" style="stop-color: var(--body)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Stays on the ground while the robot hops. -->
+  <ellipse class="shadow" cx="80" cy="148" rx="34" ry="5.5"/>
+
+  <!-- .wrap moves the whole robot (hops, jumps); .body squashes and sways inside it. -->
+  <g class="wrap">
+    <g class="body">
+      <rect class="foot" x="52" y="132" width="20" height="10" rx="5"/>
+      <rect class="foot" x="88" y="132" width="20" height="10" rx="5"/>
+      <g class="arm arm-l"><rect x="24" y="90" width="13" height="28" rx="6.5"/></g>
+      <g class="arm arm-r"><rect x="123" y="90" width="13" height="28" rx="6.5"/></g>
+
+      <g class="antenna">
+        <path class="antenna-stem" d="M80 51 V36"/>
+        <circle class="antenna-tip" cx="80" cy="31" r="6"/>
+      </g>
+      <rect class="shell" x="34" y="50" width="92" height="86" rx="28"/>
+      <rect class="screen" x="46" y="64" width="68" height="46" rx="15"/>
+
+      <g class="face">
+        <!-- .eyes blinks. The app moves .look to follow the mouse pointer. -->
+        <g class="eyes">
+          <g class="look">
+            <rect class="eye" x="57" y="76" width="11" height="15" rx="5.5"/>
+            <rect class="eye" x="92" y="76" width="11" height="15" rx="5.5"/>
+          </g>
+        </g>
+        <!-- Other eyes, hidden until a mood shows them. -->
+        <path class="eyes-alt eyes-happy" d="M57 87 Q62.5 78 68 87 M92 87 Q97.5 78 103 87"/>
+        <path class="eyes-alt eyes-closed" d="M57 85 H68 M92 85 H103"/>
+        <path class="eyes-alt eyes-dizzy" d="M58 79 L67 88 M67 79 L58 88 M93 79 L102 88 M102 79 L93 88"/>
+
+        <!-- Mouths: one at a time. -->
+        <path class="mouth m-smile" d="M72 98 Q80 104.5 88 98"/>
+        <path class="mouth m-flat" d="M73 100 H87"/>
+        <ellipse class="mouth m-o" cx="80" cy="100" rx="4" ry="4.5"/>
+      </g>
+    </g>
+
+    <!-- One prop per tool, shown by the act-* classes. Emoji keep this
+         short; draw your own shapes instead if you like. -->
+    <g class="props">
+      <text class="prop p-read" x="143" y="122">📖</text>
+      <text class="prop p-search" x="143" y="122">🔍</text>
+      <text class="prop p-edit" x="143" y="122">✏️</text>
+      <text class="prop p-run" x="143" y="122">💻</text>
+      <text class="prop p-web" x="143" y="122">🌐</text>
+      <text class="prop p-agent" x="143" y="122">🤖</text>
+      <text class="prop p-plan" x="143" y="122">📋</text>
+      <text class="prop p-ask" x="143" y="122">❓</text>
+      <text class="prop p-tool" x="143" y="122">⚙️</text>
+    </g>
+  </g>
+
+  <!-- Effects, each shown by one mood. -->
+  <g class="fx fx-thought">
+    <circle cx="108" cy="40" r="3"/><circle cx="119" cy="29" r="4.5"/><circle cx="133" cy="17" r="6.5"/>
+  </g>
+  <g class="fx fx-alert">
+    <circle cx="112" cy="30" r="11"/>
+    <path d="M112 23 V32"/><circle class="dot" cx="112" cy="36.5" r="1.7"/>
+  </g>
+  <g class="fx fx-sparkles">
+    <text x="22" y="52">✨</text><text x="124" y="40">✨</text>
+  </g>
+  <g class="fx fx-zzz">
+    <text x="106" y="44">Z</text><text x="119" y="31">z</text><text x="129" y="20">z</text>
+  </g>
+  <g class="fx fx-hearts">
+    <text x="110" y="50">♥</text><text x="34" y="56">♥</text>
+  </g>
+  <path class="fx fx-sweat" d="M120 58 q-5 8 0 11 q5 -3 0 -11 Z"/>
+</svg>

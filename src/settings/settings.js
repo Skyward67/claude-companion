@@ -107,6 +107,76 @@ for (const b of document.querySelectorAll('[data-reset]')) {
   });
 }
 
+// ---------- character ----------
+
+let characterInfo = { list: [], selected: 'buddy', status: null };
+let charactersRev = -1;
+
+function renderCharacters(info) {
+  if (!info || !info.list) return;
+  characterInfo = info;
+  const box = $('characters');
+  box.innerHTML = '';
+  for (const c of info.list) {
+    const b = document.createElement('button');
+    b.className = `preset character${c.id === info.selected ? ' active' : ''}${c.error ? ' broken' : ''}`;
+    b.innerHTML = '<b></b><span class="by"></span><span class="what"></span>';
+    b.querySelector('b').textContent = c.name;
+    b.querySelector('.by').textContent = [c.builtIn ? 'Built in' : c.id, c.author && `by ${c.author}`].filter(Boolean).join(' · ');
+    b.querySelector('.what').textContent = c.error ? `⚠ ${c.error}` : c.description;
+    b.title = c.folder;
+    b.addEventListener('click', () => setDisplay({ character: c.id }).then(refreshCharacters));
+    box.appendChild(b);
+  }
+  const current = info.list.find((c) => c.id === info.selected);
+  $('char-copy').disabled = !current;
+  $('char-folder').textContent = current && !current.builtIn ? 'Open its folder' : 'Open characters folder';
+  // Colour only applies to characters drawn with the --body colours.
+  const colorable = !current || current.colorable;
+  $('color-note').hidden = colorable;
+  for (const el of $('swatches').children) el.disabled = !colorable;
+  renderCharacterStatus(info.status);
+}
+
+function renderCharacterStatus(status) {
+  const el = $('char-status');
+  const mine = status && status.id === characterInfo.selected;
+  const problem = mine && !status.ok ? `⚠ ${status.error.replace(/\.?$/, '.')} ${status.fallback ? 'It shows up once that’s fixed.' : 'The last version that worked stays up until it’s fixed.'}` : '';
+  const lines = mine ? [problem, ...(status.warnings || [])].filter(Boolean) : [];
+  el.hidden = !lines.length;
+  el.className = `char-status${mine && !status.ok ? ' bad' : ''}`;
+  el.textContent = '';
+  for (const line of lines) {
+    const p = document.createElement('div');
+    p.textContent = line;
+    el.appendChild(p);
+  }
+}
+
+async function refreshCharacters() {
+  renderCharacters(await api.listCharacters());
+}
+
+async function characterAction(run) {
+  const r = await run();
+  renderCharacters(r);
+  if (r && r.error) {
+    const el = $('char-status');
+    el.hidden = false;
+    el.className = 'char-status bad';
+    el.textContent = `⚠ ${r.error}`;
+  }
+}
+
+$('char-copy').addEventListener('click', () => characterAction(() => api.copyCharacter(characterInfo.selected)));
+$('char-import').addEventListener('click', () => characterAction(() => api.importCharacter()));
+$('char-folder').addEventListener('click', () => api.openCharacterFolder(characterInfo.selected));
+$('char-preview').addEventListener('change', (e) => api.setPreview(e.target.value || null));
+$('char-guide').addEventListener('click', (e) => {
+  e.preventDefault();
+  api.openCharacterGuide();
+});
+
 $('buddyName').addEventListener('input', (e) => {
   api.setSettings({ buddyName: e.target.value });
   $('title').textContent = e.target.value.trim() || 'Claude Companion';
@@ -134,6 +204,7 @@ async function load() {
   $('budget-period').value = (s.budget && s.budget.period) || 'none';
   renderDisplay(s.display);
   renderSetup(current.setup);
+  refreshCharacters();
 }
 
 function renderSetup(setup) {
@@ -222,6 +293,16 @@ api.listDisplays().then(renderDisplays);
 api.onState((s) => {
   renderSetup(s.setup);
   if (s.display && JSON.stringify(s.display) !== JSON.stringify(display)) renderDisplay(s.display);
+  // Pack files changed on disk: names, descriptions or errors may have too.
+  if (s.characters) {
+    if (s.characters.rev !== charactersRev || (s.display && s.display.character !== characterInfo.selected)) {
+      charactersRev = s.characters.rev;
+      refreshCharacters();
+    } else if (JSON.stringify(s.characters.status) !== JSON.stringify(characterInfo.status)) {
+      characterInfo.status = s.characters.status;
+      renderCharacterStatus(s.characters.status);
+    }
+  }
   const b = s.credits && s.credits.budget;
   const today = s.usage ? s.usage.today.cost : 0;
   $('spend').textContent = b

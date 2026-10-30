@@ -2,6 +2,12 @@
 
 All notable changes are listed here. This project follows [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+- **Characters.** Choose the buddy's look in Settings → Look: Buddy, Blip (a small robot) or Ghost (pixel art). Make your own as pictures (one per mood, sprite sheets, animated GIF/WebP) or as an SVG with CSS animation. Make an editable copy of any character, add one someone shared, preview every mood, and see your changes each time you save. The [character guide](docs/characters.md) explains it all.
+- The buddy's pencil now stays in its hand while editing, instead of floating over the credits card.
+- The widget and Settings windows can no longer navigate to another page or open new windows.
+
 ## 0.1.1
 
 - Fixed project names for sessions started in a Windows-style folder (`D:\Dev\app`) when the buddy runs on macOS or Linux. This also fixes the test failure that stopped the 0.1.0 installers from being built.

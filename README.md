@@ -16,6 +16,7 @@ A little desktop buddy that keeps an eye on [Claude Code](https://code.claude.co
 - **Chat.** Read the conversation, type to Claude (where Claude Code allows it), or start a **buddy chat**, a Claude Code session that runs inside the buddy.
 - **Several sessions at once.** Other sessions appear as mini buddies and subagents as tiny helper clones, from the terminal, VS Code or Claude Desktop.
 - **Make it yours.** Layout presets, choose exactly what's shown, buddy colour and name, dark or light cards, how much it moves, which projects to ignore, and more.
+- **Your own character.** Pick a different buddy, or [make your own](docs/characters.md) from pictures or SVG and CSS, with an animation for every mood.
 - **Local only.** Everything stays on your machine (see [Privacy and security](#privacy-and-security)).
 
 ## Install
@@ -85,10 +86,16 @@ Changes apply right away. Quick toggles are in the right-click menu, and everyth
 | Tab | What you can change |
 | --- | --- |
 | **Display** | Layout presets (Standard, Minimal, Focus, Budget watcher, Everything); each card on or off and what it measures; mini buddies and how many; helpers; money amounts; how chatty the bubbles are, and for how long |
-| **Look** | Name, colour (presets or any colour), movement (lively, calm, still), eyes following the pointer, dark or light cards, opacity, size, screen, always-on-top |
+| **Look** | Character (built-in or your own) and a preview of each mood, name, colour (presets or any colour), movement (lively, calm, still), eyes following the pointer, dark or light cards, opacity, size, screen, always-on-top |
 | **Data** | How long a session counts as active, when the buddy sleeps, projects to ignore, spending budget |
 | **Alerts** | Notifications, answering prompts from the buddy, start at login |
 | **Connect** | Hooks, plan-usage status line, terminal chat command, Claude Code location |
+
+### Characters
+
+Three characters come built in: **Buddy**, **Blip**, a small robot, and **Ghost**, in pixel art. To make your own, pick the closest one in **Settings → Look → Character** and press **Make an editable copy**. Its folder opens, and the buddy updates every time you save a file there. A character is either a set of pictures (one per mood, sprite sheets or animated GIFs) or an SVG animated with CSS. The [character guide](docs/characters.md) walks through both, with every mood and tool you can animate.
+
+Characters only draw: they can't run code, load anything from the internet, or draw outside the buddy's box. To add one someone shared, use **Add from folder…**.
 
 ## How it works
 
