@@ -705,6 +705,7 @@ function setDisplay(patch) {
 }
 
 const BUBBLE_LEVELS = { all: 'Everything', important: 'Important only', decisions: 'Only when I’m needed', off: 'Off' };
+const ACTIVITY_LEVELS = { subtle: 'Subtle', normal: 'Normal', lively: 'Lively' };
 const SHOW_ITEMS = [
   ['showTokens', 'Tokens card'],
   ['showCredits', 'Credits card'],
@@ -729,6 +730,16 @@ function displayMenu() {
     {
       label: 'Speech bubbles',
       submenu: Object.entries(BUBBLE_LEVELS).map(([id, label]) => ({ label, type: 'radio', checked: d.bubbleLevel === id, click: () => setDisplay({ bubbleLevel: id }) })),
+    },
+    {
+      label: 'Activities',
+      submenu: [
+        { label: 'Act out what Claude is doing', type: 'checkbox', checked: d.activities, click: (item) => setDisplay({ activities: item.checked }) },
+        { type: 'separator' },
+        ...Object.entries(ACTIVITY_LEVELS).map(([id, label]) => ({ label, type: 'radio', checked: d.activityLevel === id, enabled: d.activities, click: () => setDisplay({ activityLevel: id }) })),
+        { type: 'separator' },
+        { label: 'Choose which…', click: () => openSettings('look') },
+      ],
     },
     { label: 'Customize…', click: () => openSettings('display') },
   ];

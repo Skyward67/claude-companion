@@ -5,7 +5,7 @@
 
 const path = require('path');
 const { EventEmitter } = require('events');
-const { newTranscriptState, reduceEntry, sourceOf, newHelperState, reduceHelperEntry } = require('./transcripts');
+const { newTranscriptState, reduceEntry, sourceOf, newHelperState, reduceHelperEntry, newFlow, flowTool } = require('./transcripts');
 const { describeTool, permissionLine, firstSentence, pick, errorLine, trunc, base } = require('./describe');
 const { contextLimitFor, prettyModel } = require('./pricing');
 
@@ -203,6 +203,7 @@ class Store extends EventEmitter {
       case 'UserPromptSubmit':
         s.ts.question = null;
         s.ts.recap = null;
+        s.ts.flow = newFlow();
         s.activity = null;
         this.setStatus(s, 'thinking', t);
         this.say(s, pick('prompt'));
@@ -210,6 +211,7 @@ class Store extends EventEmitter {
       case 'PreToolUse': {
         const d = describeTool(ev.tool_name, ev.tool_input);
         s.activity = d;
+        flowTool(s.ts.flow, d.kind, t);
         if (d.kind === 'ask') {
           this.wait(s, ev.tool_name === 'ExitPlanMode' ? 'plan' : 'question', ev.tool_name === 'ExitPlanMode' ? d.label : `Quick question: ${d.label}`, t);
           break;
@@ -226,14 +228,17 @@ class Store extends EventEmitter {
         break;
       case 'PostToolUse':
       case 'PermissionDenied':
+        s.ts.flow.toolAt = Math.max(s.ts.flow.toolAt, t);
         if (this.setStatus(s, 'thinking', t) && ev.hook_event_name === 'PermissionDenied') this.say(s, pick('denied'));
         break;
       case 'PostToolUseFailure':
+        s.ts.flow.toolAt = Math.max(s.ts.flow.toolAt, t);
         this.setStatus(s, 'thinking', t);
         if (!ev.is_interrupt) this.say(s, 'Hmm, that didn’t work. Adjusting…', 'oops', { ttl: 3500 });
         break;
       case 'Stop':
         for (const h of s.helpers.values()) h.status = 'done';
+        s.ts.flow.writingAt = 0;
         this.setStatus(s, 'done', t);
         if (s.ts.question) this.say(s, `Quick question: ${s.ts.question.text}`, 'waiting', { sticky: true });
         else this.say(s, s.ts.recap || firstSentence(ev.last_assistant_message) || pick('done'), 'done', { ttl: 12000 });
@@ -479,6 +484,7 @@ class Store extends EventEmitter {
       source: this.sourceOf(s),
       status: this.effectiveStatus(s),
       activity: s.status === 'working' ? s.activity || ts.activity : null,
+      flow: { ...ts.flow },
       waiting: !!d,
       decision: d ? { kind: d.kind, text: d.text } : null,
       todos: { done: ts.todos.filter((t) => t.status === 'completed').length, total: ts.todos.length, current: current ? current.activeForm || current.content : '' },
@@ -508,6 +514,8 @@ class Store extends EventEmitter {
         canJump: this.sourceOf(focus) === 'vscode' && !!this.projectDirOf(focus),
         status: this.effectiveStatus(focus),
         activity: focus.status === 'working' ? focus.activity : null,
+        // What Claude did last this turn, for the buddy to act out.
+        flow: { ...ts.flow },
         decision: this.decisionOf(focus),
         bubble: focus.bubble,
         model: prettyModel(ts.model),

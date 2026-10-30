@@ -21,6 +21,11 @@ const MANIFEST = 'character.json';
 
 const MOODS = ['idle', 'thinking', 'working', 'waiting', 'done', 'error', 'sleeping', 'compacting', 'pet'];
 const ACTS = ['read', 'search', 'edit', 'run', 'web', 'agent', 'plan', 'tool', 'ask'];
+// What the buddy acts out while Claude works (do-*), and the little things
+// it does on its own now and then (quirk-*). See renderer/activity.js.
+const ACTIVITIES = ['typing', 'coding', 'reading', 'searching', 'running', 'browsing', 'planning'];
+const QUIRKS = ['look', 'stretch', 'scratch', 'hop', 'yawn'];
+const POSES = [...MOODS, ...ACTS, ...ACTIVITIES, ...QUIRKS];
 
 const IMAGE_TYPES = {
   '.png': 'image/png',
@@ -35,9 +40,14 @@ const IMAGE_TYPES = {
 const MB = 1024 * 1024;
 const MAX = { manifest: 64 * 1024, svg: 2 * MB, css: 512 * 1024, image: 4 * MB, images: 16 * MB, copy: 64 * MB };
 
-// Where the eyes (the pack's `.look` group) point in moods that don't follow
-// the pointer, from -1 to 1, and how far they move, in SVG units.
-const DEFAULT_GAZE = { reach: [4, 3.5], moods: { thinking: [-0.5, -1], working: [0.9, 0.35], compacting: [0, 0], sleeping: [0, 0] } };
+// Where the eyes (the pack's `.look` group) point in moods and activities
+// that don't follow the pointer, from -1 to 1, and how far they move, in SVG
+// units. An activity's direction wins over its mood's.
+const DEFAULT_GAZE = {
+  reach: [4, 3.5],
+  moods: { thinking: [-0.5, -1], working: [0.9, 0.35], compacting: [0, 0], sleeping: [0, 0] },
+  activities: { typing: [0, 0.8], coding: [0, 0.8], reading: [0, 0.9], searching: [0, 0], running: [0.9, 0.3], browsing: [0.9, 0.1], planning: [0.1, 0.8] },
+};
 
 // A pack's id is its folder name: no path separators, nothing Windows can't
 // use in a folder name, no leading dot.
@@ -83,13 +93,18 @@ function pair(v, lo, hi) {
 }
 
 function readGaze(v) {
-  const gaze = { reach: DEFAULT_GAZE.reach, moods: { ...DEFAULT_GAZE.moods } };
+  const gaze = { reach: DEFAULT_GAZE.reach, moods: { ...DEFAULT_GAZE.moods }, activities: { ...DEFAULT_GAZE.activities } };
   if (!v || typeof v !== 'object') return gaze;
   gaze.reach = pair(v.reach, 0, 100) || gaze.reach;
   for (const mood of MOODS) {
     // null: this mood follows the pointer too.
     if (v[mood] === null) delete gaze.moods[mood];
     else gaze.moods[mood] = pair(v[mood], -1, 1) || gaze.moods[mood];
+  }
+  for (const a of ACTIVITIES) {
+    // null: this activity looks where its mood does.
+    if (v[a] === null) delete gaze.activities[a];
+    else gaze.activities[a] = pair(v[a], -1, 1) || gaze.activities[a];
   }
   return gaze;
 }
@@ -98,7 +113,9 @@ function readPoses(v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error('"poses" must be an object, like { "idle": "idle.png" }');
   const poses = {};
   for (const [key, p] of Object.entries(v)) {
-    if (!MOODS.includes(key) && !ACTS.includes(key)) throw new Error(`Unknown pose "${key}". Poses are named after moods (${MOODS.join(', ')}) or tools (${ACTS.join(', ')})`);
+    if (!POSES.includes(key)) {
+      throw new Error(`Unknown pose "${key}". Poses are named after moods (${MOODS.join(', ')}), tools (${ACTS.join(', ')}), activities (${ACTIVITIES.join(', ')}) or quirks (${QUIRKS.join(', ')})`);
+    }
     const o = typeof p === 'string' ? { file: p } : p;
     if (!o || typeof o !== 'object' || typeof o.file !== 'string') throw new Error(`Pose "${key}" needs a file, like "${key}.png"`);
     const frames = o.frames === undefined ? 1 : Number(o.frames);
@@ -192,19 +209,28 @@ class Assets {
   }
 }
 
+// The class that shows a pose: mood-*, act-*, do-* or quirk-*.
+function poseClass(key) {
+  if (MOODS.includes(key)) return `mood-${key}`;
+  if (ACTS.includes(key)) return `act-${key}`;
+  if (ACTIVITIES.includes(key)) return `do-${key}`;
+  return `quirk-${key}`;
+}
+
 // A pose pack becomes an SVG with one picture per pose and CSS that shows
-// the one for the current mood (falling back to idle). Tools win over moods.
-// Sprite sheets are frames side by side, slid through with steps().
+// the one for the current mood (falling back to idle). Later rules win:
+// quirks and activities over tools, tools over moods. Sprite sheets are
+// frames side by side, slid through with steps().
 function poseArt(m, assets) {
   const [w, h] = m.size;
   let art = '';
   let css = '.pose { display: none; }\n.pose-idle { display: inline; }\n';
-  for (const key of [...MOODS, ...ACTS].filter((k) => m.poses[k])) {
+  for (const key of POSES.filter((k) => m.poses[k])) {
     const p = m.poses[key];
     const href = assets.dataUrl(p.file, `pose "${key}"`);
     if (!href) throw new Error(assets.warnings[assets.warnings.length - 1] || `Pose "${key}": can't load ${p.file}`);
     if (key !== 'idle') {
-      const when = MOODS.includes(key) ? `.mood-${key}` : `.act-${key}`;
+      const when = `.${poseClass(key)}`;
       css += `${when} .pose { display: none; }\n${when} .pose-${key} { display: inline; }\n`;
     }
     if (p.frames > 1) {
@@ -417,6 +443,8 @@ module.exports = {
   DEFAULT_ID,
   MOODS,
   ACTS,
+  ACTIVITIES,
+  QUIRKS,
   validId,
   readManifest,
   loadCharacter,

@@ -2,7 +2,9 @@
 
 const $ = (id) => document.getElementById(id);
 const api = window.companion;
+const Activity = window.Activity;
 const buddy = new window.Character($('char'));
+const behavior = new Activity.Behavior();
 
 let snap = null;
 let petUntil = 0;
@@ -28,6 +30,9 @@ const DEFAULT_DISPLAY = {
   cardOpacity: 0.9,
   motion: 'full',
   eyesFollow: true,
+  activities: true,
+  activitiesOff: [],
+  activityLevel: 'normal',
 };
 let display = DEFAULT_DISPLAY;
 let appliedLook = '';
@@ -73,15 +78,43 @@ async function loadBuiltInCharacter() {
 }
 
 // Settings → Look → Preview: one mood (or all of them in turn) instead of
-// what Claude is doing, to check a character's animations.
-const PREVIEW_CYCLE = ['idle', 'thinking', 'working:read', 'working:search', 'working:edit', 'working:run', 'working:web', 'working:agent', 'working:plan', 'working:tool', 'busy', 'waiting:ask', 'done', 'error', 'compacting', 'sleeping', 'pet'];
+// what Claude is doing, to check a character's animations. Moods and tools
+// go through the activity settings like the real thing; do:* and quirk:*
+// show that activity or quirk whatever the settings say.
+const PREVIEW_CYCLE = [
+  'idle',
+  'thinking',
+  'do:typing',
+  'working:read',
+  'working:search',
+  'working:edit',
+  'working:run',
+  'working:web',
+  'working:agent',
+  'working:plan',
+  'working:tool',
+  'busy',
+  'waiting:ask',
+  'done',
+  'error',
+  'compacting',
+  'sleeping',
+  'pet',
+  ...Activity.QUIRKS.map((q) => `quirk:${q}`),
+];
+const PREVIEW_MS = 3000;
 
 function previewOf(s) {
   let p = s.preview;
   if (!p) return null;
-  if (p === 'cycle') p = PREVIEW_CYCLE[Math.floor(Date.now() / 3000) % PREVIEW_CYCLE.length];
+  if (p === 'cycle') p = PREVIEW_CYCLE[Math.floor(Date.now() / PREVIEW_MS) % PREVIEW_CYCLE.length];
   if (p === 'busy') return { mood: 'working', act: 'run', busy: true };
   const [mood, act] = p.split(':');
+  if (mood === 'do' && Activity.ACTIVITIES.includes(act)) return { forced: true, mood: 'working', act: Activity.TOOL_FOR[act], activity: act, quirk: null };
+  // A quirk plays once, so replay it every few seconds.
+  if (mood === 'quirk' && Activity.QUIRKS.includes(act)) {
+    return { forced: true, mood: 'idle', act: null, activity: null, quirk: Date.now() % PREVIEW_MS < Activity.QUIRK_MS ? act : null };
+  }
   return { mood, act: act || null, busy: false };
 }
 
@@ -147,18 +180,8 @@ function render(s) {
   display = { ...DEFAULT_DISPLAY, ...(s.display || {}) };
   applyLook(display);
   const f = s.focus;
-  const preview = Date.now() < petUntil ? null : previewOf(s);
-  const mood = preview ? preview.mood : moodOf(s);
   const helpers = display.showHelpers ? (f && f.helpers) || [] : [];
-  let act = f && f.decision ? 'ask' : f && f.activity ? f.activity.kind : null;
-  // The clones at its feet already show the helpers.
-  if (act === 'agent' && helpers.length) act = null;
-  if (preview) act = preview.act;
-
-  if (mood === 'working') busySince = busySince || Date.now();
-  else busySince = 0;
-  buddy.setBusy(preview ? preview.busy : !!busySince && Date.now() - busySince > 90000);
-  buddy.setMood(mood, act);
+  updateBuddy(s);
 
   renderTokens(s);
   renderCredits(s);
@@ -172,6 +195,37 @@ function render(s) {
   if (openPop) fillPop(openPop);
   if (window.chatUI) window.chatUI.render(s);
 }
+
+// The big buddy: a mood from the focused session (or the preview), and what
+// it acts out on top of it (activity.js). Also runs between snapshots, so
+// activities wind down and quirks start on time.
+function updateBuddy(s) {
+  const f = s.focus;
+  const now = Date.now();
+  const preview = now < petUntil ? null : previewOf(s);
+  let shown;
+  let mood;
+  if (preview && preview.forced) {
+    shown = preview;
+    mood = preview.mood;
+  } else {
+    mood = preview ? preview.mood : moodOf(s);
+    let act = f && f.decision ? 'ask' : f && f.activity ? f.activity.kind : null;
+    // The clones at its feet already show the helpers.
+    if (act === 'agent' && display.showHelpers && f && f.helpers && f.helpers.length) act = null;
+    if (preview) act = preview.act;
+    shown = behavior.next({ mood, act, flow: !preview && f ? f.flow : null }, display, now);
+  }
+
+  // Busy is about a tool that has been running a long time, not activities.
+  if (mood === 'working') busySince = busySince || now;
+  else busySince = 0;
+  buddy.setBusy(preview ? !!preview.busy : !!busySince && now - busySince > 90000);
+  buddy.setMood(shown.mood, shown.act);
+  buddy.setDoing(shown.activity, shown.quirk);
+}
+
+setInterval(() => snap && updateBuddy(snap), 500);
 
 // Allow / Deny right in the "Needs you" bubble, when the buddy can answer.
 function updateBubbleButtons(f) {
@@ -217,9 +271,12 @@ function renderHelpers(list) {
     helperChars.push(new window.Character(host, 'helper'));
   }
   while (helperChars.length > n) helperChars.pop().host.remove();
+  const now = Date.now();
   list.slice(0, n).forEach((h, i) => {
     const mood = h.status === 'done' ? 'done' : h.status === 'thinking' ? 'thinking' : 'working';
-    helperChars[i].setMood(mood, h.activity ? h.activity.kind : null);
+    const shown = Activity.activityFor({ mood, act: h.activity ? h.activity.kind : null }, display, now);
+    helperChars[i].setMood(shown.mood, shown.act);
+    helperChars[i].setDoing(shown.activity, null);
   });
   let more = helpersEl.querySelector('.helpers-more');
   if (list.length > MAX_HELPERS) {
@@ -259,7 +316,9 @@ function renderCrew(s) {
     m.el.querySelector('.mate-name').textContent = v.project;
     m.el.querySelector('.mate-bar').hidden = !v.todos.total;
     m.el.querySelector('.mate-fill').style.width = `${v.todos.total ? (v.todos.done / v.todos.total) * 100 : 0}%`;
-    m.character.setMood(moodFor(v), v.decision ? 'ask' : v.activity ? v.activity.kind : null);
+    const shown = m.behavior.next({ mood: moodFor(v), act: v.decision ? 'ask' : v.activity ? v.activity.kind : null, flow: v.flow }, display, Date.now());
+    m.character.setMood(shown.mood, shown.act);
+    m.character.setDoing(shown.activity, shown.quirk);
   }
   // Re-append only when the order changed: moving nodes restarts animations.
   const order = shown.map((v) => v.id).join('|');
@@ -290,7 +349,7 @@ function createMate(id) {
   el.addEventListener('mouseenter', () => openPopFor(el));
   el.addEventListener('mouseleave', scheduleClosePop);
   el.addEventListener('click', () => api && api.follow(id));
-  const m = { el, character };
+  const m = { el, character, behavior: new Activity.Behavior() };
   mates.set(id, m);
   crewEl.appendChild(el);
   return m;

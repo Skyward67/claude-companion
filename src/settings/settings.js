@@ -13,6 +13,19 @@ const COLORS = [
   ['Graphite', '#7d8790'],
 ];
 
+// Settings → Look → Activities, in the order shown. Kept in step with
+// ACTIVITY_SWITCHES in main/display.js.
+const ACTIVITIES = [
+  ['typing', 'Typing a reply'],
+  ['coding', 'Coding'],
+  ['reading', 'Reading files'],
+  ['searching', 'Searching'],
+  ['running', 'Running commands'],
+  ['browsing', 'Browsing the web'],
+  ['planning', 'Planning'],
+  ['quirks', 'Little quirks'],
+];
+
 let presets = [];
 let display = {};
 
@@ -44,10 +57,14 @@ function renderDisplay(d) {
     else el.value = String(d[key]);
   }
   // A sub-option only matters while its card is on.
-  const dependents = { tokenMetric: 'showTokens', creditsMode: 'showCredits', crewSize: 'showCrew', bubbleSeconds: null };
+  const dependents = { tokenMetric: 'showTokens', creditsMode: 'showCredits', crewSize: 'showCrew', activityLevel: 'activities', bubbleSeconds: null };
   for (const [key, parent] of Object.entries(dependents)) {
     const el = document.querySelector(`[data-d="${key}"]`);
     if (el) el.disabled = parent ? !d[parent] : d.bubbleLevel === 'off';
+  }
+  for (const el of document.querySelectorAll('[data-activity]')) {
+    el.checked = !(d.activitiesOff || []).includes(el.dataset.activity);
+    el.disabled = !d.activities;
   }
   $('opacity-val').textContent = `${Math.round(d.cardOpacity * 100)}%`;
   if (document.activeElement !== $('hiddenProjects')) $('hiddenProjects').value = (d.hiddenProjects || []).join(', ');
@@ -77,6 +94,23 @@ function buildPresets() {
     b.querySelector('span').textContent = p.hint;
     if (p.id !== 'custom') b.addEventListener('click', () => setDisplay({ preset: p.id }));
     box.appendChild(b);
+  }
+}
+
+function buildActivities() {
+  const box = $('activity-list');
+  box.innerHTML = '';
+  for (const [id, label] of ACTIVITIES) {
+    const row = document.createElement('label');
+    row.className = 'check';
+    row.innerHTML = '<input type="checkbox" /><span></span>';
+    row.querySelector('input').dataset.activity = id;
+    row.querySelector('span').textContent = label;
+    row.querySelector('input').addEventListener('change', () => {
+      const off = [...box.querySelectorAll('[data-activity]')].filter((el) => !el.checked).map((el) => el.dataset.activity);
+      setDisplay({ activitiesOff: off });
+    });
+    box.appendChild(row);
   }
 }
 
@@ -190,6 +224,7 @@ async function load() {
   presets = current.presets;
   buildPresets();
   buildSwatches();
+  buildActivities();
   $('version').textContent = `v${current.version}`;
   for (const id of ['notifyOnDecision', 'notifyOnDone', 'alwaysOnTop', 'answerFromBuddy']) $(id).checked = !!s[id];
   $('terminal-cmd').textContent = current.terminalCommand;

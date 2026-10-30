@@ -9,6 +9,7 @@ A little desktop buddy that keeps an eye on [Claude Code](https://code.claude.co
 ## Features
 
 - **A buddy with moods.** It breathes and follows your cursor while idle, thinks, works with a prop for the current tool, hops and waves when it needs you, jumps when done, and dozes off. Click it to pet it, and drag it anywhere, on any screen.
+- **It acts out the work.** It types on a laptop while Claude writes, codes while it edits, reads a book, sweeps a magnifier, watches a terminal, browses and ticks off a checklist, and now and then looks around, stretches or yawns. Turn each one off, or make them subtler or livelier.
 - **Live status.** A speech bubble says what Claude is doing ("Editing store.js", "Run the test suite"), what's next on the task list, and a one-line summary when a turn ends.
 - **Tokens and money.** Session tokens and context fill, an API-price cost estimate, totals for today and the last 5 hours, and your **claude.ai 5-hour and weekly limits** or a budget you set.
 - **Tasks.** A progress bar for Claude's to-do list (`TodoWrite`, `TaskCreate` and `TaskUpdate`, and the Desktop app's plan).
@@ -86,7 +87,7 @@ Changes apply right away. Quick toggles are in the right-click menu, and everyth
 | Tab | What you can change |
 | --- | --- |
 | **Display** | Layout presets (Standard, Minimal, Focus, Budget watcher, Everything); each card on or off and what it measures; mini buddies and how many; helpers; money amounts; how chatty the bubbles are, and for how long |
-| **Look** | Character (built-in or your own) and a preview of each mood, name, colour (presets or any colour), movement (lively, calm, still), eyes following the pointer, dark or light cards, opacity, size, screen, always-on-top |
+| **Look** | Character (built-in or your own) and a preview of each mood, name, colour (presets or any colour), movement (lively, calm, still), eyes following the pointer, activities (each one on or off, and how often), dark or light cards, opacity, size, screen, always-on-top |
 | **Data** | How long a session counts as active, when the buddy sleeps, projects to ignore, spending budget |
 | **Alerts** | Notifications, answering prompts from the buddy, start at login |
 | **Connect** | Hooks, plan-usage status line, terminal chat command, Claude Code location |

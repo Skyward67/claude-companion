@@ -144,6 +144,7 @@ function newTranscriptState() {
     status: 'idle',
     statusAt: 0,
     activity: null,
+    flow: newFlow(),
     question: null,
     recap: null,
     lastText: '',
@@ -160,6 +161,24 @@ function newTranscriptState() {
     chat: [], // conversation for the buddy's chat panel, newest last
     chatSeq: 0,
   };
+}
+
+// What Claude did last in this turn, so the buddy can act it out between
+// tool calls (renderer/activity.js): the kind of the last tool, when it last
+// ran, and when Claude started writing. A thinking or text block landing
+// means Claude has moved on to writing its reply or its next tool call.
+function newFlow() {
+  return { tool: null, toolAt: 0, writingAt: 0 };
+}
+
+function flowTool(flow, kind, t) {
+  flow.tool = kind;
+  flow.toolAt = Math.max(flow.toolAt, t);
+  flow.writingAt = 0;
+}
+
+function flowWriting(flow, t) {
+  if (t >= flow.toolAt) flow.writingAt = t;
 }
 
 const CHAT_MAX = 120;
@@ -377,6 +396,7 @@ function reduceEntry(ts, entry, { isSub = false, now = Date.now() } = {}) {
       if (!b) continue;
       if (b.type === 'thinking' || b.type === 'redacted_thinking') {
         setStatus(ts, 'thinking', when);
+        flowWriting(ts.flow, when);
       } else if (b.type === 'text' && b.text && b.text.trim()) {
         if (msg.model === '<synthetic>' && /^API Error/i.test(b.text)) {
           ts.error = b.text;
@@ -384,6 +404,7 @@ function reduceEntry(ts, entry, { isSub = false, now = Date.now() } = {}) {
           pushChat(ts, { kind: 'error', text: b.text.slice(0, 300), t: when });
         } else {
           ts.lastText = b.text;
+          flowWriting(ts.flow, when);
           if (ts.status !== 'working') setStatus(ts, 'thinking', when);
           const last = ts.chat[ts.chat.length - 1];
           if (last && last.kind === 'assistant' && last.msgId && last.msgId === msg.id) last.text = `${last.text}\n\n${b.text}`.slice(0, 4000);
@@ -394,6 +415,7 @@ function reduceEntry(ts, entry, { isSub = false, now = Date.now() } = {}) {
         ts.pendingTools.set(b.id, { name: b.name, input: b.input, t: when });
         if (PLAN_TOOLS.has(b.name) || b.name === 'mcp__ccd_turn__wrap_up') applyPlanTool(ts, b.name, b.input, b.id);
         ts.activity = describeTool(b.name, b.input);
+        flowTool(ts.flow, ts.activity.kind, when);
         setStatus(ts, 'working', when);
         if (b.name === 'AskUserQuestion' || b.name === 'ExitPlanMode') {
           ts.question = { kind: b.name === 'ExitPlanMode' ? 'plan' : 'question', text: ts.activity.label, toolUseId: b.id, t: when };
@@ -406,6 +428,7 @@ function reduceEntry(ts, entry, { isSub = false, now = Date.now() } = {}) {
     }
     if (msg.stop_reason === 'end_turn' || msg.stop_reason === 'stop_sequence') {
       ts.pendingTools.clear();
+      ts.flow.writingAt = 0;
       setStatus(ts, 'done', when);
     }
     return delta;
@@ -427,6 +450,8 @@ function reduceEntry(ts, entry, { isSub = false, now = Date.now() } = {}) {
         }
         if (ts.question && ts.question.toolUseId === r.tool_use_id) ts.question = null;
       }
+      ts.flow.toolAt = Math.max(ts.flow.toolAt, when);
+      ts.flow.writingAt = 0;
       if (ts.pendingTools.size === 0) setStatus(ts, 'thinking', when);
       return null;
     }
@@ -434,6 +459,7 @@ function reduceEntry(ts, entry, { isSub = false, now = Date.now() } = {}) {
     if (!text || isSyntheticPrompt(entry, text)) return null;
     if (/^\[Request interrupted/.test(text)) {
       ts.pendingTools.clear();
+      ts.flow = newFlow();
       setStatus(ts, 'idle', when);
       pushChat(ts, { kind: 'system', text: 'Interrupted', t: when });
       return null;
@@ -445,6 +471,7 @@ function reduceEntry(ts, entry, { isSub = false, now = Date.now() } = {}) {
     ts.recap = null;
     ts.error = null;
     ts.activity = null;
+    ts.flow = newFlow();
     ts.pendingTools.clear();
     setStatus(ts, 'thinking', when);
   }
@@ -492,4 +519,4 @@ function accountUsage(ts, entry, msg, when) {
   return { t: when, tokens: total, output: d.output, cost: d.cost };
 }
 
-module.exports = { TranscriptWatcher, newTranscriptState, reduceEntry, applyPlanTool, sourceOf, newHelperState, reduceHelperEntry };
+module.exports = { TranscriptWatcher, newTranscriptState, reduceEntry, applyPlanTool, sourceOf, newHelperState, reduceHelperEntry, newFlow, flowTool };

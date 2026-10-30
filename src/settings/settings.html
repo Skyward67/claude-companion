@@ -132,6 +132,22 @@
               <option value="working:tool">Other tool</option>
               <option value="busy">Busy for a while</option>
             </optgroup>
+            <optgroup label="Activities">
+              <option value="do:typing">Typing a reply</option>
+              <option value="do:coding">Coding</option>
+              <option value="do:reading">Reading</option>
+              <option value="do:searching">Searching</option>
+              <option value="do:running">Running a command</option>
+              <option value="do:browsing">Browsing the web</option>
+              <option value="do:planning">Planning</option>
+            </optgroup>
+            <optgroup label="Quirks">
+              <option value="quirk:look">Looking around</option>
+              <option value="quirk:stretch">Stretching</option>
+              <option value="quirk:scratch">Scratching its head</option>
+              <option value="quirk:hop">Hopping</option>
+              <option value="quirk:yawn">Yawning</option>
+            </optgroup>
           </select>
         </div>
         <p class="foot">Edit the files in your character’s folder and the buddy updates each time you save. <a href="#" id="char-guide">How to make a character</a></p>
@@ -159,6 +175,26 @@
           </select>
         </div>
         <label class="check"><input type="checkbox" data-d="eyesFollow" /> Eyes follow the mouse pointer</label>
+      </section>
+
+      <section>
+        <h2>Activities</h2>
+        <div class="row">
+          <div>
+            <label class="check"><input type="checkbox" data-d="activities" /> Act out what Claude is doing</label>
+            <div class="desc">Typing while Claude writes, coding while it edits, reading, searching… instead of thinking most of the time.</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="label">How often</div>
+          <select data-d="activityLevel">
+            <option value="subtle">Subtle (only while it’s happening)</option>
+            <option value="normal">Normal</option>
+            <option value="lively">Lively (lingers longer, more quirks)</option>
+          </select>
+        </div>
+        <div class="activity-list" id="activity-list"></div>
+        <p class="foot">Turn one off and the buddy thinks (or holds the tool’s prop) instead. Characters that don’t draw an activity show their working look.</p>
       </section>
 
       <section>

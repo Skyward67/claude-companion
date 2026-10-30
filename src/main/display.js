@@ -3,7 +3,11 @@
 // What the widget shows and how it looks. The main process validates every
 // change here; the renderer receives the result as-is.
 
-const { validId } = require('./characters');
+const { validId, ACTIVITIES } = require('./characters');
+
+// What the buddy can act out (Settings → Look → Activities). 'quirks' are the
+// little things it does on its own while idle or thinking for a while.
+const ACTIVITY_SWITCHES = [...ACTIVITIES, 'quirks'];
 
 const DISPLAY_DEFAULTS = {
   preset: 'standard',
@@ -27,6 +31,9 @@ const DISPLAY_DEFAULTS = {
   cardOpacity: 0.9,
   motion: 'full', // full | reduced | off
   eyesFollow: true,
+  activities: true, // act out what Claude is doing (typing, coding, reading…)
+  activitiesOff: [], // ones turned off; a list, so new ones start on
+  activityLevel: 'normal', // subtle | normal | lively
   // Which sessions count
   activeMinutes: 45,
   hiddenProjects: [],
@@ -61,6 +68,7 @@ const CHOICES = {
   bubbleLevel: ['all', 'important', 'decisions', 'off'],
   theme: ['dark', 'light'],
   motion: ['full', 'reduced', 'off'],
+  activityLevel: ['subtle', 'normal', 'lively'],
 };
 const RANGES = { crewSize: [1, 6], bubbleSeconds: [2, 30], cardOpacity: [0.4, 1], activeMinutes: [5, 24 * 60] };
 
@@ -79,6 +87,7 @@ function cleanValue(key, value) {
     const list = Array.isArray(value) ? value : String(value || '').split(',');
     return [...new Set(list.map((s) => String(s).trim()).filter(Boolean))].slice(0, 50);
   }
+  if (key === 'activitiesOff') return Array.isArray(value) ? ACTIVITY_SWITCHES.filter((a) => value.includes(a)) : undefined;
   if (typeof def === 'boolean') return !!value;
   return undefined;
 }
@@ -129,4 +138,4 @@ function presetList() {
   return Object.entries(PRESETS).map(([id, p]) => ({ id, label: p.label, hint: p.hint }));
 }
 
-module.exports = { DISPLAY_DEFAULTS, PRESETS, LAYOUT_KEYS, normalizeDisplay, updateDisplay, presetList };
+module.exports = { DISPLAY_DEFAULTS, PRESETS, LAYOUT_KEYS, ACTIVITY_SWITCHES, normalizeDisplay, updateDisplay, presetList };

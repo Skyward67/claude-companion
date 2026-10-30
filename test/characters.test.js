@@ -131,6 +131,32 @@ test('pose packs become pictures switched by mood, with sprite-sheet animation',
   assert.match(c.css, /animation: float/, 'own CSS is added after the generated rules');
 });
 
+test('poses and gaze can be set for activities and quirks too', (t) => {
+  const user = tmp(t);
+  pack(user, 'busy', {
+    'character.json': {
+      poses: { idle: 'i.png', edit: 'e.png', coding: 'c.png', yawn: { file: 'y.png', frames: 3, loop: false } },
+      gaze: { coding: [0.5, 1], reading: null },
+    },
+    'i.png': PNG,
+    'e.png': PNG,
+    'c.png': PNG,
+    'y.png': PNG,
+  });
+  const c = characters.loadCharacter('busy', user);
+  assert.match(c.css, /\.do-coding \.pose-coding \{ display: inline; \}/);
+  assert.match(c.css, /\.quirk-yawn \.pose-yawn \{ display: inline; \}/);
+  // Activities come after tools, so they win.
+  assert.ok(c.css.indexOf('.do-coding .pose-coding') > c.css.indexOf('.act-edit .pose-edit'));
+  assert.deepEqual(c.gaze.activities.coding, [0.5, 1]);
+  assert.equal(c.gaze.activities.reading, undefined, 'null: looks where its mood does');
+  assert.deepEqual(c.gaze.activities.running, [0.9, 0.3], 'defaults for the rest');
+  assert.throws(() => {
+    pack(user, 'bad', { 'character.json': { poses: { idle: 'i.png', napping: 'i.png' } }, 'i.png': PNG });
+    characters.loadCharacter('bad', user);
+  }, /activities \(typing, coding.*quirks \(look/);
+});
+
 test('pack mistakes come back as readable errors', (t) => {
   const user = tmp(t);
   const cases = {

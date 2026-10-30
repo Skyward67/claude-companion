@@ -15,6 +15,9 @@
   const scenes = {
     idle: { status: 'idle', bubble: ['info', 'Hi! Ready when you are.'] },
     thinking: { status: 'thinking', bubble: ['info', 'Ooh, let’s go!'], todos: todos(0, 0) },
+    // Thinking, but Claude has started writing: a reply, or code after an edit.
+    typing: { status: 'thinking', flow: (now) => ({ tool: null, toolAt: 0, writingAt: now }), bubble: ['info', 'Let me look at how sessions are stored.'], todos: todos(0, 0) },
+    coding: { status: 'thinking', flow: (now) => ({ tool: 'edit', toolAt: now - 400, writingAt: now }), bubble: ['tool', 'Editing store.js'], todos: todos(1, 1) },
     read: { status: 'working', activity: { kind: 'read', label: 'Reading transcripts.js' }, bubble: ['tool', 'Reading transcripts.js'], todos: todos(0, 0) },
     search: { status: 'working', activity: { kind: 'search', label: 'Searching for “usage”' }, bubble: ['tool', 'Searching for “usage”'], todos: todos(1, 1) },
     edit: { status: 'working', activity: { kind: 'edit', label: 'Editing store.js' }, bubble: ['task', 'Next up: Writing the session parser'], todos: todos(1, 1) },
@@ -72,7 +75,7 @@
     { id: 3, kind: 'tools', items: ['Reading channels.md', 'Reading hooks.md', 'Editing main.js'], count: 5 },
     { id: 4, kind: 'assistant', text: 'The panel is in place. I need to run the tests next.' },
   ];
-  const order = ['idle', 'thinking', 'read', 'search', 'edit', 'run', 'web', 'agent', 'waiting', 'question', 'done', 'error', 'compacting', 'sleeping'];
+  const order = ['idle', 'thinking', 'typing', 'read', 'search', 'edit', 'coding', 'run', 'web', 'agent', 'waiting', 'question', 'done', 'error', 'compacting', 'sleeping'];
 
   function mate(id, project, source, status, decision, activity, todos) {
     return { id, project, title: '', source, status, waiting: !!decision, decision, activity, todos: { current: '', ...todos }, helpers: 0, canJump: source === 'vscode', focused: false };
@@ -90,6 +93,7 @@
         title: '',
         status: sc.status,
         activity: sc.activity || null,
+        flow: sc.flow ? sc.flow(now) : null,
         decision: sc.decision || null,
         bubble: sc.bubble ? { id: ++bubbleId, kind: sc.bubble[0], text: sc.bubble[1], ttl: 6000, sticky: false, at: now } : null,
         model: 'Opus 5.5',
