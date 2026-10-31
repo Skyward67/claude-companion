@@ -9,26 +9,49 @@ const { validId, ACTIVITIES } = require('./characters');
 // little things it does on its own while idle or thinking for a while.
 const ACTIVITY_SWITCHES = [...ACTIVITIES, 'quirks'];
 
+// The cards around the buddy, and where each one sits (Settings → Display →
+// Arrangement). Left and right are narrow columns beside the buddy; above and
+// below are rows across the widget. Within a place, panels keep this order,
+// top to bottom.
+const PANELS = ['tokens', 'credits', 'tasks', 'crew', 'footer'];
+const PLACES = ['left', 'right', 'above', 'below'];
+const DEFAULT_PANELS = [
+  { id: 'tokens', place: 'left' },
+  { id: 'credits', place: 'right' },
+  { id: 'tasks', place: 'below' },
+  { id: 'crew', place: 'below' },
+  { id: 'footer', place: 'below' },
+];
+
 const DISPLAY_DEFAULTS = {
   preset: 'standard',
   // What's shown
   showTokens: true,
   tokenMetric: 'session', // session | output | today | context
+  tokenStyle: 'number', // number | ring (a big ring that fills up to a limit)
+  ringMetric: 'context', // context | fiveHour | sevenDay | budget
+  ringSize: 'medium', // medium | large
   showCredits: true,
   creditsMode: 'auto', // auto | plan | budget | today | session
   showTasks: true,
   showCrew: true,
   crewSize: 4,
   showHelpers: true,
+  helpersMax: 3,
+  helpersSide: 'left', // left | right: which foot of the buddy they gather at
   showFooter: true,
   showCost: true,
   bubbleLevel: 'all', // all | important | decisions | off
   bubbleSeconds: 6,
+  panels: DEFAULT_PANELS,
   // Look
   character: 'buddy', // a character pack's folder name (see characters.js)
   bodyColor: '#e07b56',
   theme: 'dark', // dark | light
+  cardColor: '', // '' (the theme's) or #rrggbb
+  accentColor: '', // '' (the theme's), 'buddy' (the body colour) or #rrggbb
   cardOpacity: 0.9,
+  idleOpacity: 1, // the whole widget fades to this while nothing's happening
   motion: 'full', // full | reduced | off
   eyesFollow: true,
   activities: true, // act out what Claude is doing (typing, coding, reading…)
@@ -40,7 +63,8 @@ const DISPLAY_DEFAULTS = {
 };
 
 // Keys a preset controls. Look and session filters are left alone.
-const LAYOUT_KEYS = ['showTokens', 'tokenMetric', 'showCredits', 'creditsMode', 'showTasks', 'showCrew', 'crewSize', 'showHelpers', 'showFooter', 'showCost', 'bubbleLevel', 'bubbleSeconds'];
+// How cards look and where they sit are left alone too, like the look.
+const LAYOUT_KEYS = ['showTokens', 'tokenMetric', 'showCredits', 'creditsMode', 'showTasks', 'showCrew', 'crewSize', 'showHelpers', 'helpersMax', 'showFooter', 'showCost', 'bubbleLevel', 'bubbleSeconds'];
 
 const PRESETS = {
   standard: { label: 'Standard', hint: 'Everything at a glance.', values: {} },
@@ -64,13 +88,32 @@ const PRESETS = {
 
 const CHOICES = {
   tokenMetric: ['session', 'output', 'today', 'context'],
+  tokenStyle: ['number', 'ring'],
+  ringMetric: ['context', 'fiveHour', 'sevenDay', 'budget'],
+  ringSize: ['medium', 'large'],
+  helpersSide: ['left', 'right'],
   creditsMode: ['auto', 'plan', 'budget', 'today', 'session'],
   bubbleLevel: ['all', 'important', 'decisions', 'off'],
   theme: ['dark', 'light'],
   motion: ['full', 'reduced', 'off'],
   activityLevel: ['subtle', 'normal', 'lively'],
 };
-const RANGES = { crewSize: [1, 6], bubbleSeconds: [2, 30], cardOpacity: [0.4, 1], activeMinutes: [5, 24 * 60] };
+const RANGES = { crewSize: [1, 8], helpersMax: [1, 6], bubbleSeconds: [2, 30], cardOpacity: [0.1, 1], idleOpacity: [0.2, 1], activeMinutes: [5, 24 * 60] };
+const FRACTIONS = ['cardOpacity', 'idleOpacity'];
+const HEX = /^#[0-9a-f]{6}$/i;
+
+// Every panel exactly once; one that's missing (new in this version, say)
+// goes where it would by default.
+function cleanPanels(value) {
+  if (!Array.isArray(value)) return undefined;
+  const out = [];
+  for (const p of value) {
+    if (!p || !PANELS.includes(p.id) || out.some((q) => q.id === p.id)) continue;
+    out.push({ id: p.id, place: PLACES.includes(p.place) ? p.place : DEFAULT_PANELS.find((q) => q.id === p.id).place });
+  }
+  for (const p of DEFAULT_PANELS) if (!out.some((q) => q.id === p.id)) out.push({ ...p });
+  return out;
+}
 
 function cleanValue(key, value) {
   const def = DISPLAY_DEFAULTS[key];
@@ -79,9 +122,14 @@ function cleanValue(key, value) {
     const n = Number(value);
     if (!Number.isFinite(n)) return undefined;
     const [lo, hi] = RANGES[key];
-    return Math.min(hi, Math.max(lo, key === 'cardOpacity' ? Math.round(n * 100) / 100 : Math.round(n)));
+    return Math.min(hi, Math.max(lo, FRACTIONS.includes(key) ? Math.round(n * 100) / 100 : Math.round(n)));
   }
-  if (key === 'bodyColor') return /^#[0-9a-f]{6}$/i.test(String(value)) ? String(value).toLowerCase() : undefined;
+  if (key === 'bodyColor') return HEX.test(String(value)) ? String(value).toLowerCase() : undefined;
+  if (key === 'cardColor' || key === 'accentColor') {
+    if (value === '' || (key === 'accentColor' && value === 'buddy')) return value;
+    return HEX.test(String(value)) ? String(value).toLowerCase() : undefined;
+  }
+  if (key === 'panels') return cleanPanels(value);
   if (key === 'character') return validId(value) ? value : undefined;
   if (key === 'hiddenProjects') {
     const list = Array.isArray(value) ? value : String(value || '').split(',');
@@ -134,8 +182,18 @@ function updateDisplay(current, patch) {
   return normalizeDisplay(next);
 }
 
+// The widget window is sized for 98px cards beside the buddy; a large ring
+// card there needs a little more room.
+const LARGE_RING_EXTRA = 24;
+function extraWidth(display) {
+  const d = normalizeDisplay(display);
+  const place = d.panels.find((p) => p.id === 'tokens').place;
+  const beside = place === 'left' || place === 'right';
+  return d.showTokens && d.tokenStyle === 'ring' && d.ringSize === 'large' && beside ? LARGE_RING_EXTRA : 0;
+}
+
 function presetList() {
   return Object.entries(PRESETS).map(([id, p]) => ({ id, label: p.label, hint: p.hint }));
 }
 
-module.exports = { DISPLAY_DEFAULTS, PRESETS, LAYOUT_KEYS, ACTIVITY_SWITCHES, normalizeDisplay, updateDisplay, presetList };
+module.exports = { DISPLAY_DEFAULTS, PRESETS, LAYOUT_KEYS, ACTIVITY_SWITCHES, PANELS, PLACES, normalizeDisplay, updateDisplay, extraWidth, presetList };

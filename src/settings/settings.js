@@ -13,6 +13,26 @@ const COLORS = [
   ['Graphite', '#7d8790'],
 ];
 
+// Settings → Look → Card colour. Dark ones get the dark theme's text, light
+// ones the light theme's (see pickColor).
+const CARD_COLORS = [
+  ['Midnight', '#1b2233'],
+  ['Forest', '#1d2b23'],
+  ['Plum', '#2b1f31'],
+  ['Slate', '#2c3138'],
+  ['Ink', '#121212'],
+  ['Sky', '#e9f1fb'],
+  ['Sage', '#e8f3ec'],
+  ['Blush', '#fbecef'],
+  ['Sand', '#f6eedf'],
+];
+
+// Settings → Display → Arrangement. Kept in step with PANELS and PLACES in
+// main/display.js.
+const PANEL_NAMES = { tokens: 'Tokens card', credits: 'Credits card', tasks: 'Task progress', crew: 'Other sessions', footer: 'Project & model line' };
+const PANEL_SHOWN = { tokens: 'showTokens', credits: 'showCredits', tasks: 'showTasks', crew: 'showCrew', footer: 'showFooter' };
+const PLACE_ORDER = ['above', 'left', 'right', 'below'];
+
 // Settings → Look → Activities, in the order shown. Kept in step with
 // ACTIVITY_SWITCHES in main/display.js.
 const ACTIVITIES = [
@@ -28,6 +48,7 @@ const ACTIVITIES = [
 
 let presets = [];
 let display = {};
+let defaults = {};
 
 // ---------- tabs ----------
 
@@ -56,23 +77,36 @@ function renderDisplay(d) {
     if (el.type === 'checkbox') el.checked = !!d[key];
     else el.value = String(d[key]);
   }
-  // A sub-option only matters while its card is on.
-  const dependents = { tokenMetric: 'showTokens', creditsMode: 'showCredits', crewSize: 'showCrew', activityLevel: 'activities', bubbleSeconds: null };
-  for (const [key, parent] of Object.entries(dependents)) {
+  // A sub-option only matters while its card (or what it belongs to) is on.
+  const ring = d.showTokens && d.tokenStyle === 'ring';
+  const enabled = {
+    tokenMetric: d.showTokens && !ring,
+    tokenStyle: d.showTokens,
+    ringMetric: ring,
+    ringSize: ring,
+    creditsMode: d.showCredits,
+    crewSize: d.showCrew,
+    helpersMax: d.showHelpers,
+    helpersSide: d.showHelpers,
+    activityLevel: d.activities,
+    bubbleSeconds: d.bubbleLevel !== 'off',
+  };
+  for (const [key, on] of Object.entries(enabled)) {
     const el = document.querySelector(`[data-d="${key}"]`);
-    if (el) el.disabled = parent ? !d[parent] : d.bubbleLevel === 'off';
+    if (el) el.disabled = !on;
   }
   for (const el of document.querySelectorAll('[data-activity]')) {
     el.checked = !(d.activitiesOff || []).includes(el.dataset.activity);
     el.disabled = !d.activities;
   }
   $('opacity-val').textContent = `${Math.round(d.cardOpacity * 100)}%`;
+  $('idle-val').textContent = d.idleOpacity >= 1 ? 'Off' : `${Math.round(d.idleOpacity * 100)}%`;
   if (document.activeElement !== $('hiddenProjects')) $('hiddenProjects').value = (d.hiddenProjects || []).join(', ');
 
   for (const b of document.querySelectorAll('.preset')) b.classList.toggle('active', b.dataset.preset === d.preset);
-  for (const s of document.querySelectorAll('.swatch')) s.classList.toggle('active', s.dataset.color === d.bodyColor);
-  $('custom-color').value = d.bodyColor;
-  $('logo').style.background = `radial-gradient(circle at 38% 32%, #ffffff55, ${d.bodyColor} 60%)`;
+  renderSwatches(d);
+  renderArrangement(d);
+  for (const logo of document.querySelectorAll('.logo')) logo.style.background = `radial-gradient(circle at 38% 32%, #ffffff55, ${d.bodyColor} 60%)`;
 }
 
 for (const el of document.querySelectorAll('[data-d]')) {
@@ -114,25 +148,160 @@ function buildActivities() {
   }
 }
 
-function buildSwatches() {
-  const box = $('swatches');
+// ---------- colours ----------
+
+// Relative luminance (as in WCAG): 0 is black, 1 is white.
+function luminance(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const lin = (c) => ((c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+}
+
+function pickColor(key, value) {
+  const patch = { [key]: value };
+  // Light text on a light card (or the other way round) would be unreadable.
+  if (key === 'cardColor' && value) patch.theme = luminance(value) > 0.4 ? 'light' : 'dark';
+  setDisplay(patch);
+}
+
+// One row of colour buttons and a picker for any colour. `named` are extra
+// choices shown as words, like "Theme" for the theme's own colour.
+function buildSwatches(box, colors, named = []) {
+  const key = box.dataset.key;
   box.innerHTML = '';
-  for (const [name, color] of COLORS) {
+  for (const [label, value, title] of named) {
+    const b = document.createElement('button');
+    b.className = 'swatch named';
+    b.textContent = label;
+    b.title = title;
+    b.dataset.value = value;
+    b.addEventListener('click', () => pickColor(key, value));
+    box.appendChild(b);
+  }
+  for (const [name, color] of colors) {
     const b = document.createElement('button');
     b.className = 'swatch';
     b.title = name;
-    b.dataset.color = color;
+    b.dataset.value = color;
     b.style.background = color;
-    b.addEventListener('click', () => setDisplay({ bodyColor: color }));
+    b.addEventListener('click', () => pickColor(key, color));
     box.appendChild(b);
   }
   const custom = document.createElement('input');
   custom.type = 'color';
-  custom.id = 'custom-color';
+  custom.className = 'custom-color';
   custom.title = 'Any colour';
-  custom.addEventListener('input', () => setDisplay({ bodyColor: custom.value }));
+  custom.addEventListener('input', () => pickColor(key, custom.value));
   box.appendChild(custom);
 }
+
+function renderSwatches(d) {
+  for (const box of document.querySelectorAll('.swatches[data-key]')) {
+    const value = d[box.dataset.key];
+    for (const s of box.querySelectorAll('.swatch')) s.classList.toggle('active', s.dataset.value === value);
+    const picker = box.querySelector('.custom-color');
+    if (picker && document.activeElement !== picker) picker.value = /^#[0-9a-f]{6}$/i.test(value) ? value : d.bodyColor;
+  }
+  const match = document.querySelector('#accent-swatches [data-value="buddy"]');
+  if (match) match.style.setProperty('--dot', d.bodyColor);
+}
+
+// ---------- arrangement ----------
+
+let dragging = null; // the panel being dragged on the arrangement map
+let arrangedKey = '';
+
+function renderArrangement(d) {
+  if (dragging) return;
+  const key = JSON.stringify([d.panels, Object.values(PANEL_SHOWN).map((k) => d[k])]);
+  if (key === arrangedKey) return;
+  arrangedKey = key;
+  const focused = document.activeElement && document.activeElement.dataset.panel;
+  for (const zone of document.querySelectorAll('.pzone')) zone.querySelector('.plist').innerHTML = '';
+  for (const p of d.panels) {
+    const chip = document.createElement('button');
+    chip.className = `pchip${d[PANEL_SHOWN[p.id]] ? '' : ' off'}`;
+    chip.textContent = PANEL_NAMES[p.id];
+    chip.draggable = true;
+    chip.dataset.panel = p.id;
+    if (!d[PANEL_SHOWN[p.id]]) chip.title = 'Turned off in “What the buddy shows”';
+    document.querySelector(`.pzone[data-place="${p.place}"] .plist`).appendChild(chip);
+  }
+  for (const zone of document.querySelectorAll('.pzone')) zone.classList.toggle('empty', !zone.querySelector('.pchip'));
+  if (focused) document.querySelector(`.pchip[data-panel="${focused}"]`)?.focus();
+  const crewPlace = document.querySelector('select[data-place="crew"]');
+  crewPlace.value = d.panels.find((p) => p.id === 'crew').place;
+  crewPlace.disabled = !d.showCrew;
+}
+
+// The map as it stands, in the order the widget reads it.
+function readArrangement() {
+  return PLACE_ORDER.flatMap((place) => [...document.querySelectorAll(`.pzone[data-place="${place}"] .pchip`)].map((c) => ({ id: c.dataset.panel, place })));
+}
+
+function saveArrangement(panels) {
+  if (JSON.stringify(panels) !== JSON.stringify(display.panels)) setDisplay({ panels });
+}
+
+function movePanel(id, place) {
+  saveArrangement([...display.panels.filter((p) => p.id !== id), { id, place }]);
+}
+
+const arrangeEl = $('arrange');
+arrangeEl.addEventListener('dragstart', (e) => {
+  dragging = e.target.closest('.pchip');
+  if (!dragging) return;
+  dragging.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragging.dataset.panel);
+});
+arrangeEl.addEventListener('dragover', (e) => {
+  const list = dragging && e.target.closest('.pzone')?.querySelector('.plist');
+  if (!list) return;
+  e.preventDefault();
+  // Live preview: the panel slides to where it would land.
+  const before = [...list.querySelectorAll('.pchip:not(.dragging)')].find((c) => {
+    const r = c.getBoundingClientRect();
+    return e.clientY < r.top + r.height / 2;
+  });
+  if (before !== dragging.nextSibling || dragging.parentElement !== list) list.insertBefore(dragging, before || null);
+  for (const zone of arrangeEl.querySelectorAll('.pzone')) zone.classList.toggle('over', zone.contains(list));
+});
+arrangeEl.addEventListener('drop', (e) => e.preventDefault());
+arrangeEl.addEventListener('dragend', () => {
+  if (!dragging) return;
+  dragging.classList.remove('dragging');
+  dragging = null;
+  for (const zone of arrangeEl.querySelectorAll('.pzone')) zone.classList.remove('over');
+  // The map already shows the result; the saved settings redraw it.
+  arrangedKey = '';
+  saveArrangement(readArrangement());
+});
+arrangeEl.addEventListener('keydown', (e) => {
+  const chip = e.target.closest('.pchip');
+  if (!chip) return;
+  const panels = readArrangement();
+  const i = panels.findIndex((p) => p.id === chip.dataset.panel);
+  const p = panels[i];
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    // Swap with the neighbour in the same place.
+    const step = e.key === 'ArrowUp' ? -1 : 1;
+    let j = i + step;
+    while (panels[j] && panels[j].place !== p.place) j += step;
+    if (!panels[j]) return;
+    [panels[i], panels[j]] = [panels[j], panels[i]];
+    saveArrangement(panels);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const k = PLACE_ORDER.indexOf(p.place) + (e.key === 'ArrowLeft' ? -1 : 1);
+    if (k < 0 || k >= PLACE_ORDER.length) return;
+    movePanel(p.id, PLACE_ORDER[k]);
+  } else {
+    return;
+  }
+  e.preventDefault();
+});
+document.querySelector('select[data-place="crew"]').addEventListener('change', (e) => movePanel('crew', e.target.value));
+$('arrange-reset').addEventListener('click', () => setDisplay({ panels: defaults.panels }));
 
 for (const b of document.querySelectorAll('[data-reset]')) {
   b.addEventListener('click', async () => {
@@ -222,8 +391,14 @@ async function load() {
   const current = await api.getSettings();
   const s = current.settings;
   presets = current.presets;
+  defaults = current.displayDefaults;
   buildPresets();
-  buildSwatches();
+  buildSwatches($('swatches'), COLORS);
+  buildSwatches($('card-swatches'), CARD_COLORS, [['Theme', '', 'The theme’s own colour']]);
+  buildSwatches($('accent-swatches'), COLORS, [
+    ['Theme', '', 'The theme’s own accent'],
+    ['Buddy', 'buddy', 'Same colour as the buddy'],
+  ]);
   buildActivities();
   $('version').textContent = `v${current.version}`;
   for (const id of ['notifyOnDecision', 'notifyOnDone', 'alwaysOnTop', 'answerFromBuddy']) $(id).checked = !!s[id];

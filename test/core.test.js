@@ -309,12 +309,65 @@ test('display preferences: presets, custom edits and validation', () => {
   assert.equal(d.preset, 'minimal', 'undoing the edit lands back on the preset');
 
   d = updateDisplay(d, { crewSize: 42, bodyColor: 'javascript:alert(1)', theme: 'neon', bubbleLevel: 'shout', hiddenProjects: ' scratch, demo ,scratch,,', evil: 1 });
-  assert.equal(d.crewSize, 6);
+  assert.equal(d.crewSize, 8);
   assert.equal(d.bodyColor, '#4f8fe0');
   assert.equal(d.theme, DISPLAY_DEFAULTS.theme);
   assert.equal(d.bubbleLevel, 'important');
   assert.deepEqual(d.hiddenProjects, ['scratch', 'demo']);
   assert.equal('evil' in d, false);
+});
+
+test('display preferences: token ring, agents, arrangement, colours and fading', () => {
+  const { normalizeDisplay, updateDisplay, extraWidth, PANELS } = require('../src/main/display');
+  let d = normalizeDisplay({});
+  assert.deepEqual(
+    d.panels.map((p) => `${p.id}:${p.place}`),
+    ['tokens:left', 'credits:right', 'tasks:below', 'crew:below', 'footer:below'],
+  );
+
+  // Every panel exactly once, whatever comes in.
+  d = updateDisplay(d, { panels: [{ id: 'crew', place: 'left' }, { id: 'evil', place: 'left' }, { id: 'crew', place: 'right' }, { id: 'tasks', place: 'nowhere' }, null] });
+  assert.deepEqual(
+    d.panels.map((p) => `${p.id}:${p.place}`),
+    ['crew:left', 'tasks:below', 'tokens:left', 'credits:right', 'footer:below'],
+  );
+  assert.deepEqual(updateDisplay(d, { panels: 'top' }).panels, d.panels, 'not a list: unchanged');
+  assert.equal(new Set(normalizeDisplay({ panels: [] }).panels.map((p) => p.id)).size, PANELS.length);
+
+  d = updateDisplay(d, { tokenStyle: 'ring', ringMetric: 'fiveHour', ringSize: 'large', helpersSide: 'right' });
+  assert.equal(d.preset, 'standard', 'how cards look and where they sit is not part of a preset');
+  assert.equal(updateDisplay(d, { preset: 'minimal' }).tokenStyle, 'ring');
+  assert.equal(updateDisplay(d, { preset: 'minimal' }).panels[0].id, 'crew');
+  d = updateDisplay(d, { tokenStyle: 'donut', ringMetric: 'forever', ringSize: 'huge', helpersSide: 'up' });
+  assert.equal(d.tokenStyle, 'ring');
+  assert.equal(d.ringMetric, 'fiveHour');
+  assert.equal(d.ringSize, 'large');
+  assert.equal(d.helpersSide, 'right');
+
+  d = updateDisplay(d, { crewSize: 99, helpersMax: 0 });
+  assert.equal(d.crewSize, 8);
+  assert.equal(d.helpersMax, 1);
+  assert.equal(updateDisplay(d, { helpersMax: 5 }).preset, 'custom', 'how many helpers is part of the layout, like the crew');
+
+  d = updateDisplay(d, { cardColor: '#1B2233', accentColor: 'buddy', cardOpacity: 0.01, idleOpacity: 0.456 });
+  assert.equal(d.cardColor, '#1b2233');
+  assert.equal(d.accentColor, 'buddy');
+  assert.equal(d.cardOpacity, 0.1);
+  assert.equal(d.idleOpacity, 0.46);
+  d = updateDisplay(d, { cardColor: 'buddy', accentColor: 'red; background: url(x)' });
+  assert.equal(d.cardColor, '#1b2233', 'only the accent can follow the buddy');
+  assert.equal(d.accentColor, 'buddy');
+  d = updateDisplay(d, { cardColor: '', accentColor: '' });
+  assert.equal(d.cardColor, '');
+  assert.equal(d.accentColor, '');
+
+  // Only a large ring beside the buddy needs a wider window.
+  const ring = { tokenStyle: 'ring', ringSize: 'large', panels: [{ id: 'tokens', place: 'right' }] };
+  assert.ok(extraWidth(ring) > 0);
+  assert.equal(extraWidth({ ...ring, ringSize: 'medium' }), 0);
+  assert.equal(extraWidth({ ...ring, showTokens: false }), 0);
+  assert.equal(extraWidth({ ...ring, panels: [{ id: 'tokens', place: 'below' }] }), 0);
+  assert.equal(extraWidth({}), 0);
 });
 
 test('store: ignored projects and the active window come from display settings', () => {

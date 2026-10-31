@@ -21,6 +21,8 @@ Three characters come built in: **Buddy** (the default), **Blip**, a small robot
 4. Use **Preview** (same section) to show any mood on the buddy while you work, or **All moods in turn** to watch them all.
 5. If something's wrong, the error appears right under the character list, with the file, line and column.
 
+<img src="screenshots/characters.png" alt="Settings → Look → Character, listing Buddy, Blip and Ghost, with the Make an editable copy, Add from folder and Open characters folder buttons and the Preview menu" width="420">
+
 ## Where characters live
 
 Each character is a folder in your characters folder. **Open characters folder** in Settings takes you there.
@@ -113,11 +115,11 @@ Tool calls are quick, and most of a turn is Claude writing. So instead of thinki
 | `browsing` | On the web | `web` |
 | `planning` | Updating its task list | `plan` |
 
-**Quirks**: little things the buddy does on its own for a couple of seconds, now and then, while idle or thinking for a while: `look` (looks around), `stretch`, `scratch` (scratches its head), `hop` and `yawn`.
+**Quirks**: little things the buddy does on its own for a couple of seconds, now and then, while idle or thinking for a while: `look` (looks around), `stretch`, `scratch` (scratches its head), `hop` and `yawn`. While idle it picks from `look`, `stretch`, `hop` and `yawn`; while thinking, from `look`, `scratch` and `stretch`.
 
 People can turn each activity and the quirks off, or make them more or less frequent, so don't put anything only there that the moods need.
 
-The same character is also used for the **mini buddies** (your other sessions, 44 px) and the **helpers** at the buddy's feet (subagents, 32 px). The main buddy is 150 px at Normal size. Keep the art readable when it's small.
+The same character is also used for the **mini buddies** (your other sessions, 44 px, or 34 px when they sit beside the buddy) and the **helpers** at the buddy's feet (subagents, 32 px). The main buddy is 150 px at Normal size. Keep the art readable when it's small.
 
 ## Pictures
 

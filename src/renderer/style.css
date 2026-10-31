@@ -13,6 +13,7 @@
   --faint: #8f8178;
   --accent: #e8875f;
   --accent-2: #f5b48f;
+  --on-accent: #2a140b; /* text on an accent background */
   --good: #6fcf97;
   --warn: #f5a623;
   --warn-text: #ffd27a;
@@ -69,21 +70,57 @@ button {
   justify-content: flex-end;
   align-items: center;
   padding-bottom: 6px;
+  transition: opacity 0.6s ease; /* fading while idle */
 }
 
-/* ---------- row: tokens | buddy | credits ---------- */
+/* ---------- zones: where the panels sit ----------
+   Left and right are columns beside the buddy, bottom-aligned with its
+   feet. Above and below are rows across the widget. app.js moves the
+   panels between them. */
 
 #row {
   display: flex;
   align-items: flex-end;
   gap: 2px;
 }
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+/* Nothing showing: take no room at all. */
+.zone:not(:has(:is(.chip, .tasks, .crew, .footer):not([hidden]))),
+.card-row:not(:has(> .chip:not([hidden]))) {
+  display: none;
+}
+.zone.side {
+  width: 98px;
+  justify-content: flex-end;
+  padding-bottom: 26px;
+}
+.zone.side:has(.chip.large:not([hidden])) {
+  width: 122px;
+}
+.zone.stack {
+  max-width: 350px;
+}
+#zone-above {
+  margin-bottom: 4px;
+}
+#zone-below {
+  margin-top: -4px;
+}
+.card-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
 
 .chip {
   box-sizing: border-box;
   width: 98px;
   padding: 8px 9px 8px;
-  margin-bottom: 26px;
   border-radius: 14px;
   background: var(--card);
   border: 1px solid var(--border);
@@ -92,7 +129,7 @@ button {
 }
 .chip:hover {
   transform: translateY(-2px);
-  border-color: rgba(232, 135, 95, 0.45);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 .chip-label {
   font-size: 9px;
@@ -141,6 +178,69 @@ button {
   stroke-dasharray: 50.27;
   stroke-dashoffset: 50.27;
   transition: stroke-dashoffset 0.6s ease, stroke 0.3s;
+}
+
+/* The tokens card as a big ring that fills up to a limit. */
+.chip.ring-style {
+  text-align: center;
+}
+.chip.large {
+  width: 122px;
+}
+.gauge {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin: 4px auto 3px;
+}
+.chip.large .gauge {
+  width: 102px;
+  height: 102px;
+}
+.gauge svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.gauge-bg,
+.gauge-fg {
+  fill: none;
+  stroke-width: 9;
+}
+.gauge-bg {
+  stroke: var(--track);
+}
+.gauge-fg {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-dasharray: 276.46; /* 2πr, r = 44 */
+  stroke-dashoffset: 276.46;
+  transition: stroke-dashoffset 0.6s ease, stroke 0.3s;
+}
+.gauge-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+}
+.gauge-text b {
+  font-size: 19px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.chip.large .gauge-text b {
+  font-size: 26px;
+}
+.gauge-text span {
+  font-size: 9px;
+  color: var(--muted);
+}
+.gauge-sub {
+  justify-content: center;
 }
 
 .meter {
@@ -211,13 +311,26 @@ button {
   align-items: flex-end;
   cursor: default;
 }
+.helpers.right {
+  left: auto;
+  right: -10px;
+  flex-direction: row-reverse;
+}
 .helper {
   width: 32px;
   height: 32px;
   margin-right: -9px;
 }
-.helper:nth-child(2) {
+.helpers.right .helper {
+  margin-right: 0;
+  margin-left: -9px;
+}
+.helper:nth-child(even) {
   margin-bottom: 3px;
+}
+.helpers.right .helpers-more {
+  margin-left: 0;
+  margin-right: 12px;
 }
 .helpers-more {
   margin-left: 12px;
@@ -232,10 +345,10 @@ button {
 /* Other sessions: a crew of mini buddies. */
 .crew {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 4px;
   max-width: 340px;
-  margin-top: 6px;
 }
 .mate {
   position: relative;
@@ -248,7 +361,7 @@ button {
   text-align: center;
 }
 .mate:hover {
-  border-color: rgba(232, 135, 95, 0.5);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
   background: var(--card);
 }
 .mate.waiting {
@@ -298,6 +411,53 @@ button {
   background: var(--card);
 }
 
+/* Beside the buddy, panels fit its narrow columns. */
+.side .crew {
+  max-width: 98px;
+}
+.side .mate {
+  width: 46px;
+  padding: 2px 1px 3px;
+}
+.side .mate-char {
+  width: 34px;
+  height: 34px;
+}
+.side .mate-label {
+  font-size: 8.5px;
+}
+.side .tasks {
+  width: 100%;
+  padding: 6px 8px 7px;
+}
+.side .tasks-head {
+  flex-direction: column;
+  gap: 1px;
+}
+.side .tasks-current {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+.side .footer {
+  box-sizing: border-box;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 1px;
+  padding: 4px 7px;
+  text-align: center;
+}
+.side .project {
+  max-width: 76px;
+}
+.side .model {
+  white-space: normal;
+}
+
 .src-dot {
   flex: none;
   width: 7px;
@@ -309,7 +469,7 @@ button {
   background: #3b9cff;
 }
 .src-dot.s-desktop {
-  background: var(--accent);
+  background: #e8875f; /* Claude's own colour, whatever the accent */
 }
 .src-dot.s-terminal {
   background: #7cf0a8;
@@ -349,7 +509,7 @@ button {
 .pop .actions button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #2a140b;
+  color: var(--on-accent);
   font-weight: 600;
 }
 .pop .sub {
@@ -480,8 +640,8 @@ button {
 /* ---------- tasks ---------- */
 
 .tasks {
+  box-sizing: border-box;
   width: 268px;
-  margin-top: -6px;
   padding: 7px 11px 8px;
   border-radius: 12px;
   background: var(--card);
@@ -531,7 +691,6 @@ button {
   align-items: center;
   gap: 6px;
   max-width: 300px;
-  margin-top: 6px;
   padding: 3px 10px;
   border-radius: 10px;
   background: var(--card);
@@ -589,13 +748,13 @@ button {
   border: none;
   padding: 1px 7px;
   border-radius: 8px;
-  background: rgba(232, 135, 95, 0.22);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--accent-2);
   font-size: 10px;
   font-weight: 600;
 }
 .connect:hover {
-  background: rgba(232, 135, 95, 0.4);
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 /* ---------- popovers ---------- */
@@ -723,7 +882,8 @@ button {
 /* Still: the cards stop moving too. */
 body.motion-off .bubble,
 body.motion-off .attention,
-body.motion-off .mate {
+body.motion-off .mate,
+body.motion-off #stage {
   animation: none !important;
   transition: none !important;
 }
@@ -862,7 +1022,7 @@ body.chat-open .chat-toggle,
   padding: 6px 10px;
   border-radius: 12px 12px 3px 12px;
   background: var(--accent);
-  color: #2a140b;
+  color: var(--on-accent);
 }
 .msg.user.pending {
   opacity: 0.6;
@@ -1022,7 +1182,7 @@ body.chat-open .chat-toggle,
 .action button.opt.picked {
   background: var(--accent);
   border-color: var(--accent);
-  color: #2a140b;
+  color: var(--on-accent);
 }
 .action button.danger:hover {
   border-color: var(--bad);
@@ -1068,7 +1228,7 @@ body.chat-open .chat-toggle,
   border: none;
   border-radius: 10px;
   background: var(--accent);
-  color: #2a140b;
+  color: var(--on-accent);
   font-weight: 700;
   white-space: nowrap;
 }

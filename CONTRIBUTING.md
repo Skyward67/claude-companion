@@ -21,15 +21,17 @@ You need Node.js 22 or later. Claude Code is optional, but you'll want it to see
 | `npm test` | Unit and integration tests (`node --test`). Run them before opening a pull request |
 | `npm run dev` | Logs hook events and a state summary every 5 seconds |
 | `npx electron . --demo` | Cycles through every mood with made-up data |
-| `npx electron . --demo=<scene>` | One scene: `idle`, `thinking`, `read`, `edit`, `run`, `web`, `agent`, `waiting`, `question`, `done`, `error`, `compacting`, `sleeping`, `chat`, `chatq` |
-| `--preset=<name>` / `--display=<json>` | Try a layout or look without saving it, for example `--display={"theme":"light"}` |
+| `npx electron . --demo=<scene>` | One scene: `idle`, `thinking`, `typing`, `coding`, `read`, `search`, `edit`, `run`, `web`, `agent`, `waiting`, `question`, `done`, `error`, `compacting`, `sleeping`, `chat`, `chatq` |
+| `--preset=<name>` / `--display=<json>` | Try a layout or look without saving it, for example `--display={"theme":"light"}` or `--display={"character":"blip","tokenStyle":"ring"}` (any key from `DISPLAY_DEFAULTS` in [display.js](src/main/display.js)) |
 | `--scale=<n>` | Override the size for this run |
 | `--settings[=<tab>]` | Open the Settings window at start |
-| `--snapshot=<file.png> [--snapshot-delay=ms] [--exit]` | Save a picture of the widget (or of Settings, with `--settings`) and quit. Handy for checking UI changes and for screenshots |
+| `--snapshot=<file.png> [--snapshot-delay=ms] [--snapshot-bottom] [--exit]` | Save a picture of the widget (or of Settings, with `--settings`; `--snapshot-bottom` scrolls it to the end first) and quit. Handy for checking UI changes and for screenshots |
 | `--screen=<n>` | Sent to a running instance: moves the buddy to screen n |
 | `--user-data=<dir>` | Use a separate settings and characters folder, e.g. to try things without touching your own (it also runs alongside your usual buddy) |
 
 `npm run pack` builds an unpacked app in `dist/`, and `npm run dist` builds installers for your platform.
+
+`npm run icon` redraws `assets/icon.png` from the built-in buddy. The README's hero image is put together from three widget snapshots: `npx electron scripts/render-assets.js hero a.png b.png c.png` (use `--user-data` for the snapshots, so they don't pick up your own settings).
 
 ## Project layout
 
@@ -52,11 +54,14 @@ src/characters/  built-in character packs: buddy (the default), blip, ghost
                    (see docs/characters.md)
 src/renderer/    the widget: plain scripts, no bundler
   character.js     draws a character pack in a shadow root, sanitising its SVG; colours
-  app.js           cards, bubbles, crew, popovers
+  activity.js      what the buddy acts out (typing, coding, reading…) and its quirks
+  app.js           cards, token ring, panel arrangement, bubbles, crew, popovers
   chat.js          chat panel
   demo.js          made-up data for demo mode
 src/settings/    Settings window
 bridge/          scripts Claude Code runs: status-line bridge, MCP channel server
+scripts/         render-assets.js: the app icon and the README hero image
+docs/            the character guide and screenshots
 test/            node:test suites
 ```
 
