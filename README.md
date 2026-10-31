@@ -4,7 +4,7 @@ A little desktop buddy that keeps an eye on [Claude Code](https://code.claude.co
 
 > **Unofficial community project.** Claude Companion is not made, endorsed or supported by Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic, PBC.
 
-![Claude Companion at work, with the chat panel open and in a light theme](docs/screenshots/hero.png)
+![Three buddies: one typing on a laptop beside a context ring, one with the chat panel open on a permission prompt, and Blip the robot in a light theme with a big plan-limit ring and two helpers](docs/screenshots/hero.png)
 
 ## Features
 
@@ -16,7 +16,7 @@ A little desktop buddy that keeps an eye on [Claude Code](https://code.claude.co
 - **Decisions.** Permission prompts, questions and plans show up with **Allow / Deny**, answer and **Approve** buttons, plus an optional notification.
 - **Chat.** Read the conversation, type to Claude (where Claude Code allows it), or start a **buddy chat**, a Claude Code session that runs inside the buddy.
 - **Several sessions at once.** Other sessions appear as mini buddies and subagents as tiny helper clones, from the terminal, VS Code or Claude Desktop.
-- **Make it yours.** Layout presets, choose exactly what's shown, buddy colour and name, dark or light cards, how much it moves, which projects to ignore, and more.
+- **Make it yours.** Layout presets, choose exactly what's shown and where each panel sits, a big ring for your context or plan limit, how many mini buddies and helpers to show, buddy, card and accent colours, card transparency and fading while idle, how much it moves, which projects to ignore, and more.
 - **Your own character.** Pick a different buddy, or [make your own](docs/characters.md) from pictures or SVG and CSS, with an animation for every mood.
 - **Local only.** Everything stays on your machine (see [Privacy and security](#privacy-and-security)).
 
@@ -47,7 +47,8 @@ npm start
 1. **Start the app.** The buddy appears in the bottom-right corner, with an icon in the system tray. With no setup at all, it already follows your sessions by reading Claude Code's transcripts.
 2. **Click ⚡ connect** in the buddy's footer, or go to Settings → Connect. This adds hooks to `~/.claude/settings.json`; it asks first and saves a backup. With hooks, the buddy reacts the moment Claude needs a decision and can answer prompts for you. Restart running Claude sessions afterwards.
 3. **Optional:** turn on **Plan usage** in Settings → Connect to see your claude.ai limits (terminal sessions; needs Node.js on PATH).
-4. **Right-click the buddy** for layout presets, what to show, sessions to follow, size, screen and chat.
+4. **Right-click the buddy** for layout presets, what to show, activities, sessions to follow, size, screen and chat.
+5. **Optional:** pick another character, or make your own, in Settings → Look → Character (see [Characters](#characters)).
 
 ## Chat and decisions
 
@@ -86,8 +87,8 @@ Changes apply right away. Quick toggles are in the right-click menu, and everyth
 
 | Tab | What you can change |
 | --- | --- |
-| **Display** | Layout presets (Standard, Minimal, Focus, Budget watcher, Everything); each card on or off and what it measures; mini buddies and how many; helpers; money amounts; how chatty the bubbles are, and for how long |
-| **Look** | Character (built-in or your own) and a preview of each mood, name, colour (presets or any colour), movement (lively, calm, still), eyes following the pointer, activities (each one on or off, and how often), dark or light cards, opacity, size, screen, always-on-top |
+| **Display** | Layout presets (Standard, Minimal, Focus, Budget watcher, Everything); each card on or off and what it measures; the tokens card as a big ring that fills up with the context window, the 5-hour or weekly limit or your budget; how many mini buddies (up to 8) and helpers (up to 6) to show, and where; where each panel sits (left, right, above or below the buddy, dragged into place); money amounts; how chatty the bubbles are, and for how long |
+| **Look** | Character (built-in or your own) and a preview of each mood, name, colour (presets or any colour), movement (lively, calm, still), eyes following the pointer, activities (each one on or off, and how often), dark or light cards, card and accent colours, card opacity, fading while idle, size, screen, always-on-top |
 | **Data** | How long a session counts as active, when the buddy sleeps, projects to ignore, spending budget |
 | **Alerts** | Notifications, answering prompts from the buddy, start at login |
 | **Connect** | Hooks, plan-usage status line, terminal chat command, Claude Code location |

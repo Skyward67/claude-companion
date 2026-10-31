@@ -10,7 +10,7 @@ const { TranscriptWatcher } = require('./transcripts');
 const { startHookServer } = require('./hookServer');
 const claudeConfig = require('./claudeConfig');
 const { drawTrayIcon } = require('./trayIcon');
-const { updateDisplay, presetList, DISPLAY_DEFAULTS } = require('./display');
+const { updateDisplay, presetList, extraWidth, DISPLAY_DEFAULTS } = require('./display');
 const { Decisions } = require('./decisions');
 const { Channels } = require('./channels');
 const { BuddyChats, findClaudeExecutable } = require('./buddyChats');
@@ -363,7 +363,8 @@ function lockNavigation(w) {
 
 function widgetSize() {
   const scale = settings.get('scale') || 1;
-  return { width: Math.round(WIN_W * scale), height: Math.round(WIN_H * scale), scale };
+  const width = WIN_W + extraWidth(settings.get('display'));
+  return { width: Math.round(width * scale), height: Math.round(WIN_H * scale), scale };
 }
 
 function defaultPosition({ width, height }) {
@@ -509,13 +510,16 @@ function keepOnTop() {
   if (alive(win) && settings.get('alwaysOnTop') && !win.isAlwaysOnTop()) applyAlwaysOnTop();
 }
 
-function applyScale() {
+// After a size change or a wider arrangement (see extraWidth in display.js).
+function applySize() {
+  if (!alive(win)) return;
   const size = widgetSize();
-  const [x, y] = win.getPosition();
   const old = win.getBounds();
-  // Keep the bottom-centre anchored so the buddy doesn't jump around.
-  win.setBounds({ x: Math.round(x + old.width / 2 - size.width / 2), y: y + old.height - size.height, width: size.width, height: size.height });
   win.webContents.setZoomFactor(size.scale);
+  if (old.width === size.width && old.height === size.height) return;
+  // Keep the bottom-centre anchored so the buddy doesn't jump around.
+  win.setBounds({ x: Math.round(old.x + old.width / 2 - size.width / 2), y: old.y + old.height - size.height, width: size.width, height: size.height });
+  savePosition();
 }
 
 function showWidget() {
@@ -700,6 +704,7 @@ function updateTray(snap) {
 
 function setDisplay(patch) {
   settings.set({ display: updateDisplay(settings.get('display'), patch) });
+  applySize();
   store.dirty = true;
   push();
 }
@@ -726,7 +731,15 @@ function displayMenu() {
         { label: 'Custom', type: 'radio', checked: d.preset === 'custom', enabled: false },
       ],
     },
-    { label: 'Show', submenu: SHOW_ITEMS.map(([key, label]) => ({ label, type: 'checkbox', checked: !!d[key], click: (item) => setDisplay({ [key]: item.checked }) })) },
+    {
+      label: 'Show',
+      submenu: [
+        ...SHOW_ITEMS.map(([key, label]) => ({ label, type: 'checkbox', checked: !!d[key], click: (item) => setDisplay({ [key]: item.checked }) })),
+        { type: 'separator' },
+        { label: 'Tokens as a big ring', type: 'checkbox', checked: d.tokenStyle === 'ring', enabled: d.showTokens, click: (item) => setDisplay({ tokenStyle: item.checked ? 'ring' : 'number' }) },
+        { label: 'Arrange…', click: () => openSettings('display') },
+      ],
+    },
     {
       label: 'Speech bubbles',
       submenu: Object.entries(BUBBLE_LEVELS).map(([id, label]) => ({ label, type: 'radio', checked: d.bubbleLevel === id, click: () => setDisplay({ bubbleLevel: id }) })),
@@ -780,7 +793,7 @@ function buildMenu() {
         checked: scale === value,
         click: () => {
           settings.set({ scale: value });
-          applyScale();
+          applySize();
         },
       })),
     },
@@ -931,7 +944,7 @@ ipcMain.handle('settings:set', (_e, patch) => {
   const before = selectedCharacter();
   settings.set(clean);
   if ('alwaysOnTop' in clean) applyAlwaysOnTop();
-  if ('scale' in clean) applyScale();
+  if ('scale' in clean || 'display' in clean) applySize();
   if (selectedCharacter() !== before) loadCharacter();
   store.dirty = true;
   push();

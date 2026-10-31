@@ -15,19 +15,34 @@ let busySince = 0;
 const DEFAULT_DISPLAY = {
   showTokens: true,
   tokenMetric: 'session',
+  tokenStyle: 'number',
+  ringMetric: 'context',
+  ringSize: 'medium',
   showCredits: true,
   creditsMode: 'auto',
   showTasks: true,
   showCrew: true,
   crewSize: 4,
   showHelpers: true,
+  helpersMax: 3,
+  helpersSide: 'left',
   showFooter: true,
   showCost: true,
   bubbleLevel: 'all',
   bubbleSeconds: 6,
+  panels: [
+    { id: 'tokens', place: 'left' },
+    { id: 'credits', place: 'right' },
+    { id: 'tasks', place: 'below' },
+    { id: 'crew', place: 'below' },
+    { id: 'footer', place: 'below' },
+  ],
   bodyColor: '#e07b56',
   theme: 'dark',
+  cardColor: '',
+  accentColor: '',
   cardOpacity: 0.9,
+  idleOpacity: 1,
   motion: 'full',
   eyesFollow: true,
   activities: true,
@@ -38,16 +53,89 @@ let display = DEFAULT_DISPLAY;
 let appliedLook = '';
 
 function applyLook(d) {
-  const key = [d.bodyColor, d.theme, d.cardOpacity, d.motion, d.eyesFollow].join('|');
+  const key = [d.bodyColor, d.theme, d.cardColor, d.accentColor, d.cardOpacity, d.motion, d.eyesFollow].join('|');
   if (key === appliedLook) return;
   appliedLook = key;
   window.setBodyColor(d.bodyColor);
   document.documentElement.dataset.theme = d.theme;
   document.documentElement.style.setProperty('--card-alpha', String(d.cardOpacity));
+  applyColors(d);
   document.body.classList.remove('motion-full', 'motion-reduced', 'motion-off');
   document.body.classList.add(`motion-${d.motion}`);
   window.setCharacterMotion(d.motion);
   if (!d.eyesFollow) buddy.lookAt(0, 0);
+}
+
+function hexRgb(hex) {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [n >> 16, (n >> 8) & 255, n & 255];
+}
+
+// Relative luminance (as in WCAG): 0 is black, 1 is white.
+function luminance([r, g, b]) {
+  const lin = (c) => ((c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+// Card and accent colours (Settings → Look → Colours). Unset, the theme's
+// own colours in style.css apply.
+function applyColors(d) {
+  const root = document.documentElement.style;
+  const card = hexRgb(d.cardColor);
+  if (card) {
+    root.setProperty('--card-rgb', card.join(', '));
+    root.setProperty('--card-solid', `rgba(${card.join(', ')}, 0.97)`);
+  } else {
+    root.removeProperty('--card-rgb');
+    root.removeProperty('--card-solid');
+  }
+  const hex = d.accentColor === 'buddy' ? d.bodyColor : d.accentColor;
+  const accent = hexRgb(hex);
+  if (accent) {
+    root.setProperty('--accent', hex);
+    // A lighter tint reads better on dark cards, a deeper one on light cards.
+    root.setProperty('--accent-2', `color-mix(in srgb, ${hex} ${d.theme === 'light' ? '80%, black' : '65%, white'})`);
+    root.setProperty('--on-accent', luminance(accent) > 0.2 ? '#2a140b' : '#ffffff');
+  } else {
+    for (const k of ['--accent', '--accent-2', '--on-accent']) root.removeProperty(k);
+  }
+}
+
+// ---------- arrangement ----------
+
+// Where each panel sits (Settings → Display → Arrangement). Cards above or
+// below the buddy share a row; everything else there gets a line of its own.
+const ZONES = { left: $('zone-left'), right: $('zone-right'), above: $('zone-above'), below: $('zone-below') };
+const PANEL_ELS = Object.fromEntries(['tokens', 'credits', 'tasks', 'crew', 'footer'].map((id) => [id, $(id)]));
+const CARDS = ['tokens', 'credits'];
+let appliedPanels = '';
+
+function applyPanels(panels) {
+  const key = JSON.stringify(panels);
+  // Moving nodes restarts their animations, so only when it changed.
+  if (key === appliedPanels) return;
+  appliedPanels = key;
+  for (const [place, zone] of Object.entries(ZONES)) {
+    const nodes = [];
+    let cardRow = null;
+    for (const p of panels.filter((x) => x.place === place && PANEL_ELS[x.id])) {
+      const el = PANEL_ELS[p.id];
+      if (zone.classList.contains('stack') && CARDS.includes(p.id)) {
+        if (!cardRow) {
+          cardRow = document.createElement('div');
+          cardRow.className = 'card-row';
+          nodes.push(cardRow);
+        }
+        cardRow.appendChild(el);
+      } else {
+        cardRow = null;
+        nodes.push(el);
+      }
+    }
+    zone.replaceChildren(...nodes);
+  }
 }
 
 // ---------- character pack ----------
@@ -179,6 +267,7 @@ function render(s) {
   snap = s;
   display = { ...DEFAULT_DISPLAY, ...(s.display || {}) };
   applyLook(display);
+  applyPanels(display.panels);
   const f = s.focus;
   const helpers = display.showHelpers ? (f && f.helpers) || [] : [];
   updateBuddy(s);
@@ -194,6 +283,7 @@ function render(s) {
   updateBubbleButtons(f);
   if (openPop) fillPop(openPop);
   if (window.chatUI) window.chatUI.render(s);
+  updateFade(s);
 }
 
 // The big buddy: a mood from the focused session (or the preview), and what
@@ -225,7 +315,29 @@ function updateBuddy(s) {
   buddy.setDoing(shown.activity, shown.quirk);
 }
 
-setInterval(() => snap && updateBuddy(snap), 500);
+setInterval(() => {
+  if (!snap) return;
+  updateBuddy(snap);
+  updateFade(snap);
+}, 500);
+
+// Settings → Look → Fade while idle: the whole widget fades back while
+// nothing's happening, and comes back for work, decisions, bubbles and the
+// pointer.
+const stageEl = $('stage');
+function updateFade(s) {
+  const quiet =
+    display.idleOpacity < 1 &&
+    ignoring &&
+    !s.preview &&
+    Date.now() >= petUntil &&
+    bubbleEl.hidden &&
+    !document.body.classList.contains('chat-open') &&
+    !(s.attention && s.attention.length) &&
+    ['idle', 'sleeping'].includes(moodFor(s.focus));
+  const opacity = quiet ? String(display.idleOpacity) : '';
+  if (stageEl.style.opacity !== opacity) stageEl.style.opacity = opacity;
+}
 
 // Allow / Deny right in the "Needs you" bubble, when the buddy can answer.
 function updateBubbleButtons(f) {
@@ -259,11 +371,12 @@ $('bubble-buttons').addEventListener('click', (e) => {
 
 const helpersEl = $('helpers');
 const helperChars = [];
-const MAX_HELPERS = 3;
 
 function renderHelpers(list) {
+  const max = display.helpersMax;
   helpersEl.hidden = !list.length;
-  const n = Math.min(MAX_HELPERS, list.length);
+  helpersEl.classList.toggle('right', display.helpersSide === 'right');
+  const n = Math.min(max, list.length);
   while (helperChars.length < n) {
     const host = document.createElement('div');
     host.className = 'helper';
@@ -279,13 +392,13 @@ function renderHelpers(list) {
     helperChars[i].setDoing(shown.activity, null);
   });
   let more = helpersEl.querySelector('.helpers-more');
-  if (list.length > MAX_HELPERS) {
+  if (list.length > max) {
     if (!more) {
       more = document.createElement('span');
       more.className = 'helpers-more';
       helpersEl.appendChild(more);
     }
-    more.textContent = `+${list.length - MAX_HELPERS}`;
+    more.textContent = `+${list.length - max}`;
   } else if (more) {
     more.remove();
   }
@@ -355,14 +468,23 @@ function createMate(id) {
   return m;
 }
 
+const levelColor = (pct) => (pct > 85 ? 'var(--bad)' : pct > 65 ? 'var(--warn)' : 'var(--accent)');
+
 function renderTokens(s) {
-  $('tokens').hidden = !display.showTokens;
+  const card = $('tokens');
+  card.hidden = !display.showTokens;
   if (!display.showTokens) return;
+  const asRing = display.tokenStyle === 'ring';
+  card.classList.toggle('ring-style', asRing);
+  card.classList.toggle('large', asRing && display.ringSize === 'large');
+  card.querySelector('.tok-number').hidden = asRing;
+  card.querySelector('.tok-ring').hidden = !asRing;
+  if (asRing) return renderGauge(s);
   const f = s.focus;
   const pct = f ? f.context.pct : 0;
   const ring = $('ctx-ring');
   ring.style.strokeDashoffset = String(50.27 * (1 - pct / 100));
-  ring.style.stroke = pct > 85 ? 'var(--bad)' : pct > 65 ? 'var(--warn)' : 'var(--accent)';
+  ring.style.stroke = levelColor(pct);
   const ctx = f ? `ctx ${Math.round(pct)}%` : 'no session';
   const [label, big, sub] = {
     session: () => ['Tokens', fmtTokens(f ? f.tokens.total : s.usage.today.tokens), f ? ctx : 'today'],
@@ -373,6 +495,39 @@ function renderTokens(s) {
   $('tok-label').textContent = label;
   $('tok-total').textContent = big;
   $('ctx-label').textContent = sub;
+}
+
+// The big ring: how full a limit is (Settings → Display → Token ring).
+// pct is null when there's nothing to measure yet.
+function gaugeOf(s) {
+  const f = s.focus;
+  const c = s.credits || {};
+  const m = display.ringMetric;
+  if (m === 'fiveHour' || m === 'sevenDay') {
+    const label = m === 'fiveHour' ? '5-hour limit' : 'Weekly limit';
+    const w = c.plan && c.plan[m];
+    return w ? { label, pct: w.pct, sub: `resets in ${fmtIn(w.resetsAt - Date.now())}` } : { label, pct: null, sub: 'Turn on plan usage' };
+  }
+  if (m === 'budget') {
+    if (!c.budget) return { label: 'Budget', pct: null, sub: 'Set a budget' };
+    return { label: 'Budget', pct: c.budget.pct, sub: display.showCost ? `${fmtUsd(c.budget.left)} left` : 'of your budget' };
+  }
+  if (!f) return { label: 'Context', pct: null, sub: 'no session' };
+  return { label: 'Context', pct: f.context.pct, sub: `${fmtTokens(f.context.used)} / ${fmtTokens(f.context.limit)}` };
+}
+
+const GAUGE_LENGTH = 2 * Math.PI * 44; // the ring's circumference (r=44 in index.html)
+
+function renderGauge(s) {
+  const g = gaugeOf(s);
+  const pct = g.pct == null ? 0 : Math.min(100, Math.max(0, g.pct));
+  const fg = $('gauge-fg');
+  fg.style.strokeDashoffset = String(GAUGE_LENGTH * (1 - pct / 100));
+  fg.style.stroke = levelColor(pct);
+  $('tok-label').textContent = g.label;
+  $('gauge-pct').textContent = g.pct == null ? '—' : `${Math.round(g.pct)}%`;
+  $('gauge-unit').hidden = g.pct == null;
+  $('gauge-sub').textContent = g.sub;
 }
 
 function meter(name, pct) {
@@ -726,10 +881,12 @@ document.addEventListener('mousemove', (e) => {
   if (over === !ignoring) return;
   ignoring = !over;
   if (api) api.setIgnoreMouse(ignoring);
+  if (snap) updateFade(snap);
 });
 document.addEventListener('mouseleave', () => {
   if (!ignoring && api) api.setIgnoreMouse(true);
   ignoring = true;
+  if (snap) updateFade(snap);
 });
 
 const buddyEl = $('buddy');
