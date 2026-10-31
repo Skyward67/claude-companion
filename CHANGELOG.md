@@ -2,7 +2,7 @@
 
 All notable changes are listed here. This project follows [Semantic Versioning](https://semver.org).
 
-## Unreleased
+## 0.2.0
 
 - **Characters.** Choose the buddy's look in Settings → Look: Buddy, Blip (a small robot) or Ghost (pixel art). Make your own as pictures (one per mood, sprite sheets, animated GIF/WebP) or as an SVG with CSS animation. Make an editable copy of any character, add one someone shared, preview every mood, and see your changes each time you save. The [character guide](docs/characters.md) explains it all.
 - **Activities.** The buddy no longer spends most of a turn thinking. It acts out what Claude is most likely doing: typing on a laptop while Claude writes its reply, coding while it edits (and while it writes the next edit), reading a book, sweeping a magnifier, watching a terminal, browsing a page and ticking off a checklist. The last activity lingers for a moment after its tool, so quick tool calls no longer flicker. Now and then it looks around, stretches, scratches its head, hops or yawns while idle or thinking. Settings → Look → Activities turns each one off and sets how present they are (subtle, normal, lively); the right-click menu has the switch and the level too. Mini buddies and helpers act out their sessions as well.
@@ -14,6 +14,7 @@ All notable changes are listed here. This project follows [Semantic Versioning](
 - The buddy's pencil now stays in its hand while editing, instead of floating over the credits card.
 - Changing the buddy's size now saves its position, so it no longer shifts on the next start.
 - The widget and Settings windows can no longer navigate to another page or open new windows.
+- Built on Electron 45.
 - For development: `--user-data=<dir>` runs with a separate settings and characters folder, alongside your usual buddy, and the demo has `typing`, `coding` and `search` scenes.
 
 ## 0.1.1
