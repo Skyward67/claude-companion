@@ -56,19 +56,82 @@
           <label class="check"><input type="checkbox" data-d="showTasks" /> Task progress bar</label>
         </div>
         <div class="row">
-          <label class="check"><input type="checkbox" data-d="showCrew" /> Other sessions (mini buddies)</label>
-          <div class="inline"><span class="unit">up to</span><input type="number" data-d="crewSize" min="1" max="6" /></div>
-        </div>
-        <div class="row">
-          <label class="check"><input type="checkbox" data-d="showHelpers" /> Helpers (subagents)</label>
-        </div>
-        <div class="row">
           <label class="check"><input type="checkbox" data-d="showFooter" /> Project &amp; model line</label>
         </div>
         <div class="row">
           <label class="check"><input type="checkbox" data-d="showCost" /> Money amounts</label>
           <span class="desc">Hide this if you’re on a subscription and only care about limits.</span>
         </div>
+      </section>
+
+      <section>
+        <h2>Tokens card</h2>
+        <div class="row">
+          <div class="label">Show as</div>
+          <select data-d="tokenStyle">
+            <option value="number">A number and a small ring</option>
+            <option value="ring">A big ring that fills up</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="label">The ring fills up with</div>
+          <select data-d="ringMetric">
+            <option value="context">Context window</option>
+            <option value="fiveHour">5-hour plan limit</option>
+            <option value="sevenDay">Weekly plan limit</option>
+            <option value="budget">Spending budget</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="label">Ring size</div>
+          <select data-d="ringSize">
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </div>
+        <p class="foot">Plan limits need plan usage (Connect), and the budget is set in Data. The ring turns orange past 65% and red past 85%.</p>
+      </section>
+
+      <section>
+        <h2>Agents</h2>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-d="showCrew" /> Other sessions (mini buddies)</label>
+          <div class="inline"><span class="unit">up to</span><input type="number" data-d="crewSize" min="1" max="8" /></div>
+        </div>
+        <div class="row">
+          <div class="label sub">Where</div>
+          <select data-place="crew">
+            <option value="below">Below the buddy</option>
+            <option value="above">Above the buddy</option>
+            <option value="left">Left of the buddy</option>
+            <option value="right">Right of the buddy</option>
+          </select>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-d="showHelpers" /> Helpers (subagents)</label>
+          <div class="inline"><span class="unit">up to</span><input type="number" data-d="helpersMax" min="1" max="6" /></div>
+        </div>
+        <div class="row">
+          <div class="label sub">Where</div>
+          <select data-d="helpersSide">
+            <option value="left">At the buddy’s left foot</option>
+            <option value="right">At the buddy’s right foot</option>
+          </select>
+        </div>
+        <p class="foot">Any more than that show as “+N”. Beside the buddy, mini buddies are smaller, two to a row.</p>
+      </section>
+
+      <section>
+        <h2>Arrangement</h2>
+        <div class="arrange" id="arrange">
+          <div class="pzone" data-place="above"><div class="pzone-label">Above</div><div class="plist"></div></div>
+          <div class="pzone" data-place="left"><div class="pzone-label">Left</div><div class="plist"></div></div>
+          <div class="pbuddy"><div class="logo mini"></div></div>
+          <div class="pzone" data-place="right"><div class="pzone-label">Right</div><div class="plist"></div></div>
+          <div class="pzone" data-place="below"><div class="pzone-label">Below</div><div class="plist"></div></div>
+        </div>
+        <p class="foot">Drag the panels around the buddy. In each place they stack top to bottom in this order. With the keyboard: ↑ ↓ reorder, ← → change place. Dimmed panels are turned off.</p>
+        <button class="link" id="arrange-reset">Back to the usual arrangement</button>
       </section>
 
       <section>
@@ -164,7 +227,7 @@
             <div class="label">Colour</div>
             <div class="desc" id="color-note" hidden>This character brings its own colours.</div>
           </div>
-          <div class="swatches" id="swatches"></div>
+          <div class="swatches" id="swatches" data-key="bodyColor"></div>
         </div>
         <div class="row">
           <div class="label">Movement</div>
@@ -198,7 +261,7 @@
       </section>
 
       <section>
-        <h2>Cards</h2>
+        <h2>Colours &amp; transparency</h2>
         <div class="row">
           <div class="label">Theme</div>
           <select data-d="theme">
@@ -207,8 +270,29 @@
           </select>
         </div>
         <div class="row">
-          <div class="label">Opacity</div>
-          <div class="inline"><input type="range" data-d="cardOpacity" min="0.4" max="1" step="0.05" /><span class="unit" id="opacity-val"></span></div>
+          <div>
+            <div class="label">Card colour</div>
+            <div class="desc">Picking one sets a theme that keeps the text readable.</div>
+          </div>
+          <div class="swatches" id="card-swatches" data-key="cardColor"></div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Accent</div>
+            <div class="desc">Rings, bars and buttons.</div>
+          </div>
+          <div class="swatches" id="accent-swatches" data-key="accentColor"></div>
+        </div>
+        <div class="row">
+          <div class="label">Card opacity</div>
+          <div class="inline"><input type="range" data-d="cardOpacity" min="0.1" max="1" step="0.05" /><span class="unit" id="opacity-val"></span></div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Fade while idle</div>
+            <div class="desc">The whole buddy fades back while Claude is idle, and comes back when it works, needs you, or you point at it.</div>
+          </div>
+          <div class="inline"><input type="range" data-d="idleOpacity" min="0.2" max="1" step="0.05" /><span class="unit" id="idle-val"></span></div>
         </div>
       </section>
 

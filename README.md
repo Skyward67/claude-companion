@@ -16,7 +16,7 @@ A little desktop buddy that keeps an eye on [Claude Code](https://code.claude.co
 - **Decisions.** Permission prompts, questions and plans show up with **Allow / Deny**, answer and **Approve** buttons, plus an optional notification.
 - **Chat.** Read the conversation, type to Claude (where Claude Code allows it), or start a **buddy chat**, a Claude Code session that runs inside the buddy.
 - **Several sessions at once.** Other sessions appear as mini buddies and subagents as tiny helper clones, from the terminal, VS Code or Claude Desktop.
-- **Make it yours.** Layout presets, choose exactly what's shown, buddy colour and name, dark or light cards, how much it moves, which projects to ignore, and more.
+- **Make it yours.** Layout presets, choose exactly what's shown and where each panel sits, a big ring for your context or plan limit, how many mini buddies and helpers to show, buddy, card and accent colours, card transparency and fading while idle, how much it moves, which projects to ignore, and more.
 - **Your own character.** Pick a different buddy, or [make your own](docs/characters.md) from pictures or SVG and CSS, with an animation for every mood.
 - **Local only.** Everything stays on your machine (see [Privacy and security](#privacy-and-security)).
 
@@ -86,8 +86,8 @@ Changes apply right away. Quick toggles are in the right-click menu, and everyth
 
 | Tab | What you can change |
 | --- | --- |
-| **Display** | Layout presets (Standard, Minimal, Focus, Budget watcher, Everything); each card on or off and what it measures; mini buddies and how many; helpers; money amounts; how chatty the bubbles are, and for how long |
-| **Look** | Character (built-in or your own) and a preview of each mood, name, colour (presets or any colour), movement (lively, calm, still), eyes following the pointer, activities (each one on or off, and how often), dark or light cards, opacity, size, screen, always-on-top |
+| **Display** | Layout presets (Standard, Minimal, Focus, Budget watcher, Everything); each card on or off and what it measures; the tokens card as a big ring that fills up with the context window, the 5-hour or weekly limit or your budget; how many mini buddies (up to 8) and helpers (up to 6) to show, and where; where each panel sits (left, right, above or below the buddy, dragged into place); money amounts; how chatty the bubbles are, and for how long |
+| **Look** | Character (built-in or your own) and a preview of each mood, name, colour (presets or any colour), movement (lively, calm, still), eyes following the pointer, activities (each one on or off, and how often), dark or light cards, card and accent colours, card opacity, fading while idle, size, screen, always-on-top |
 | **Data** | How long a session counts as active, when the buddy sleeps, projects to ignore, spending budget |
 | **Alerts** | Notifications, answering prompts from the buddy, start at login |
 | **Connect** | Hooks, plan-usage status line, terminal chat command, Claude Code location |

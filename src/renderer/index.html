@@ -45,13 +45,28 @@
         <div class="bubble-buttons" id="bubble-buttons"></div>
       </div>
 
+      <!-- Panels live in these zones; app.js moves them where Settings →
+           Display → Arrangement says. This is the default arrangement. -->
+      <div id="zone-above" class="zone stack"></div>
+
       <div id="row">
-        <div id="tokens" class="chip interactive" data-pop="tokens">
-          <div class="chip-label" id="tok-label">Tokens</div>
-          <div class="chip-big" id="tok-total">—</div>
-          <div class="chip-sub">
-            <svg class="ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" class="ring-bg" /><circle cx="10" cy="10" r="8" class="ring-fg" id="ctx-ring" /></svg>
-            <span id="ctx-label">ctx —</span>
+        <div id="zone-left" class="zone side">
+          <div id="tokens" class="chip interactive" data-pop="tokens">
+            <div class="chip-label" id="tok-label">Tokens</div>
+            <div class="tok-number">
+              <div class="chip-big" id="tok-total">—</div>
+              <div class="chip-sub">
+                <svg class="ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" class="ring-bg" /><circle cx="10" cy="10" r="8" class="ring-fg" id="ctx-ring" /></svg>
+                <span id="ctx-label">ctx —</span>
+              </div>
+            </div>
+            <div class="tok-ring" hidden>
+              <div class="gauge">
+                <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="gauge-bg" /><circle cx="50" cy="50" r="44" class="gauge-fg" id="gauge-fg" /></svg>
+                <div class="gauge-text"><b id="gauge-pct">—</b><span id="gauge-unit">used</span></div>
+              </div>
+              <div class="chip-sub gauge-sub" id="gauge-sub"></div>
+            </div>
           </div>
         </div>
 
@@ -61,28 +76,32 @@
           <button id="chat-toggle" class="chat-toggle" title="Chat with Claude">💬<span id="chat-badge" class="chat-badge" hidden></span></button>
         </div>
 
-        <div id="credits" class="chip interactive" data-pop="credits">
-          <div class="chip-label" id="cred-label">Today</div>
-          <div id="cred-body"></div>
+        <div id="zone-right" class="zone side">
+          <div id="credits" class="chip interactive" data-pop="credits">
+            <div class="chip-label" id="cred-label">Today</div>
+            <div id="cred-body"></div>
+          </div>
         </div>
       </div>
 
-      <div id="tasks" class="tasks interactive" data-pop="tasks" hidden>
-        <div class="tasks-head">
-          <span class="tasks-count" id="tasks-count"></span>
-          <span class="tasks-current" id="tasks-current"></span>
+      <div id="zone-below" class="zone stack">
+        <div id="tasks" class="tasks interactive" data-pop="tasks" hidden>
+          <div class="tasks-head">
+            <span class="tasks-count" id="tasks-count"></span>
+            <span class="tasks-current" id="tasks-current"></span>
+          </div>
+          <div class="bar"><div class="bar-fill" id="tasks-fill"></div></div>
         </div>
-        <div class="bar"><div class="bar-fill" id="tasks-fill"></div></div>
-      </div>
 
-      <div id="crew" class="crew" hidden></div>
+        <div id="crew" class="crew" hidden></div>
 
-      <div id="footer" class="footer interactive" data-pop="sessions">
-        <span id="src" class="src-dot"></span>
-        <span id="project" class="project"></span>
-        <span id="model" class="model"></span>
-        <button id="auto" class="connect" hidden title="Stop following this session and go back to automatic">↺ auto</button>
-        <button id="connect" class="connect" hidden title="Connect to Claude Code for live permission alerts">⚡ connect</button>
+        <div id="footer" class="footer interactive" data-pop="sessions">
+          <span id="src" class="src-dot"></span>
+          <span id="project" class="project"></span>
+          <span id="model" class="model"></span>
+          <button id="auto" class="connect" hidden title="Stop following this session and go back to automatic">↺ auto</button>
+          <button id="connect" class="connect" hidden title="Connect to Claude Code for live permission alerts">⚡ connect</button>
+        </div>
       </div>
     </div>
 
