@@ -4,7 +4,7 @@ A little desktop buddy that keeps an eye on [Claude Code](https://code.claude.co
 
 > **Unofficial community project.** Claude Companion is not made, endorsed or supported by Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic, PBC.
 
-![Claude Companion at work, with the chat panel open and in a light theme](docs/screenshots/hero.png)
+![Three buddies: one typing on a laptop beside a context ring, one with the chat panel open on a permission prompt, and Blip the robot in a light theme with a big plan-limit ring and two helpers](docs/screenshots/hero.png)
 
 ## Features
 
@@ -47,7 +47,8 @@ npm start
 1. **Start the app.** The buddy appears in the bottom-right corner, with an icon in the system tray. With no setup at all, it already follows your sessions by reading Claude Code's transcripts.
 2. **Click ⚡ connect** in the buddy's footer, or go to Settings → Connect. This adds hooks to `~/.claude/settings.json`; it asks first and saves a backup. With hooks, the buddy reacts the moment Claude needs a decision and can answer prompts for you. Restart running Claude sessions afterwards.
 3. **Optional:** turn on **Plan usage** in Settings → Connect to see your claude.ai limits (terminal sessions; needs Node.js on PATH).
-4. **Right-click the buddy** for layout presets, what to show, sessions to follow, size, screen and chat.
+4. **Right-click the buddy** for layout presets, what to show, activities, sessions to follow, size, screen and chat.
+5. **Optional:** pick another character, or make your own, in Settings → Look → Character (see [Characters](#characters)).
 
 ## Chat and decisions
 

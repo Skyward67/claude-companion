@@ -46,7 +46,7 @@ function heroHtml(images) {
   html,body{margin:0;width:1500px;height:760px;overflow:hidden}
   body{display:flex;align-items:flex-end;justify-content:center;gap:80px;padding-bottom:20px;box-sizing:border-box;
     background:radial-gradient(circle at 20% 15%,#41567a 0,transparent 55%),radial-gradient(circle at 85% 80%,#6b4a5e 0,transparent 50%),linear-gradient(135deg,#1f2a3c,#2b2233)}
-  img{width:360px;filter:drop-shadow(0 18px 30px rgba(0,0,0,.35))}
+  img{height:640px;filter:drop-shadow(0 18px 30px rgba(0,0,0,.35))}
   </style></head><body>${cells}</body></html>`;
 }
 
