@@ -1,7 +1,7 @@
 {
   "name": "claude-companion",
   "productName": "Claude Companion",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "An unofficial desktop buddy for Claude Code: live progress, tokens, plan usage, and buttons for the decisions waiting on you.",
   "main": "src/main/main.js",
   "author": "Skyward",
